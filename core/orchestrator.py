@@ -29,6 +29,30 @@ async def run_analysis(company: str):
     Yields SSE-formatted strings as each agent completes its analysis.
     Finally, yields the verdict.
     """
+    from core.llm import call_llm
+    prompt = f"""Is "{company}" a real technology or AI-related company 
+    that could be analyzed for competitive intelligence purposes?
+    
+    Reply with VALID if it is a real tech/AI company, startup, or 
+    technology organization.
+    Reply with INVALID if it is: a consumer brand unrelated to tech, 
+    a person's name, fictional, nonsensical, or not a real company.
+    
+    Reply with VALID or INVALID only. No explanation."""
+    
+    try:
+        validation_result = await call_llm(prompt, temperature=0.0, max_tokens=100)
+        if "INVALID" in validation_result.upper():
+            error_event = {
+                "type": "error",
+                "agent": "validator",
+                "message": "This tool analyzes AI and technology companies only. Please enter a valid tech company name (e.g., OpenAI, Mistral, Nvidia, Palantir)."
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+            return
+    except Exception as e:
+        pass  # If validation API fails, fail open and proceed with analysis
+
     queue = asyncio.Queue()
     agent_results = {}
 

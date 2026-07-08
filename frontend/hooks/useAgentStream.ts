@@ -129,7 +129,11 @@ export function useAgentStream() {
           setIsStreaming(false);
           es.close();
         } else if (data.type === 'error') {
-          if (data.agent === 'verdict') {
+          if (data.agent === 'validator') {
+            setError(data.message);
+            setIsStreaming(false);
+            es.close();
+          } else if (data.agent === 'verdict') {
             setVerdict({
               status: 'error',
               verdict: 'ERROR',

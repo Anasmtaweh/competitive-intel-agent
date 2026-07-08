@@ -30,6 +30,7 @@ INSTRUCTIONS:
 11. SUPERSEDED EVENTS: Before including any event, scan ALL your sources for later information about the same topic. If Source A reports that something happened (e.g., a departure, a policy, a deal) but Source B — dated later — shows a different current state (e.g., the person returned, the policy was reversed, the deal was restructured), then Source A's event has been superseded. Do NOT present superseded events as current news. Present only the most recent known state of affairs.
 12. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 13. TONE: Write like a journalist reporting facts, not an advocate. Use measured language. NEVER use absolute or hyperbolic language like "historic," "groundbreaking," "game-changing," or "unprecedented" unless directly quoting a source. Every statement must be proportional to the evidence.
+14. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
 
 OUTPUT FORMAT:
 • [Event in one sentence] — Source: [URL]

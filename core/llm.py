@@ -87,9 +87,10 @@ async def call_llm(
 
 
 async def stream_llm(
-    prompt: str,
+    prompt: str = None,
     temperature: float = 0.5,
     max_tokens: int = 8000,
+    messages: list = None,
 ):
     """
     Call the configured LLM with a single user prompt and yield chunks as they stream.
@@ -106,9 +107,16 @@ async def stream_llm(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
+    if messages:
+        payload_messages = messages
+    elif prompt:
+        payload_messages = [{"role": "user", "content": prompt}]
+    else:
+        raise ValueError("Must provide either prompt or messages")
+
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": payload_messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": True,

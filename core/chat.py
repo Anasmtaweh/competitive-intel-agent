@@ -33,11 +33,9 @@ Be concise, analytical, and objective.
 
 If you are asked to re-evaluate or discuss the final recommendation, you MUST strictly adhere to the system's official verdict ontology: INVEST, WATCH, PARTNER, or AVOID. 
 DO NOT invent new verdicts (like "Conditional Invest"). Instead, pick the closest official verdict and explain any conditions or changes in confidence within your reasoning.
-
-USER QUERY: {query}
 """
 
-async def run_chat_stream(company: str, query: str, report_context_str: str):
+async def run_chat_stream(company: str, query: str, report_context_str: str, history: list[dict] = None):
     """
     Stream a chat response back to the client via SSE.
     Step 1: Classify if we need more info.
@@ -86,11 +84,18 @@ async def run_chat_stream(company: str, query: str, report_context_str: str):
         # Step 3: Stream Final Answer
         chat_sys_prompt = CHAT_PROMPT.format(
             company=company,
-            context=final_context,
-            query=query
+            context=final_context
         )
         
-        async for chunk in stream_llm(chat_sys_prompt, temperature=0.3):
+        messages = [{"role": "system", "content": chat_sys_prompt}]
+        
+        if history:
+            for turn in history[-6:]:
+                messages.append({"role": turn["role"], "content": turn["content"]})
+                
+        messages.append({"role": "user", "content": query})
+        
+        async for chunk in stream_llm(messages=messages, temperature=0.3):
             # Encode each chunk as SSE data
             yield f'data: {json.dumps({"type": "chunk", "message": chunk})}\n\n'
             

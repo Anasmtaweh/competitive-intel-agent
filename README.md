@@ -1,10 +1,10 @@
 # 🔍 Competitive Intelligence Agent
 
-> **AI-powered multi-agent system that delivers institutional-grade competitive analysis in under 60 seconds.**
+> **Institutional-grade competitive analysis in under 60 seconds.**
 
-An autonomous swarm of 6 specialized AI agents performs real-time competitive intelligence — analyzing breaking news, competitive positioning, business model sustainability, risk vectors, and growth signals — then synthesizes everything into a single executive recommendation with full evidence traceability.
+An autonomous swarm of 6 specialized AI agents that performs real-time competitive intelligence. It analyzes breaking news, maps competitive positioning, dissects business models, scores risk vectors, and identifies growth catalysts. It then synthesizes these findings into a definitive, evidence-backed executive recommendation.
 
-Built for founders, investors, and analysts who need Bloomberg Terminal-depth insights without the Bloomberg Terminal price tag.
+Built for founders, investors, and analysts who require Bloomberg Terminal-level insights without the massive price tag or the hallucinations of standard LLMs.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -15,124 +15,138 @@ Built for founders, investors, and analysts who need Bloomberg Terminal-depth in
 
 ---
 
-## 🎯 What It Does
+## 🎯 What It Actually Does
 
-Type any company name. In under 60 seconds, receive:
+Type a company name. The system instantly validates the entity, fires off 5 concurrent research agents, and streams the results in real-time. You get a completely sourced dashboard showing:
 
 | Agent | Role | Output |
 |-------|------|--------|
-| 📰 **News Agent** | Scans for funding rounds, acquisitions, lawsuits, leadership changes | Sourced breaking news with recency timestamps |
-| ⚔️ **Competitor Agent** | Maps competitive landscape and market positioning | Competitive moat analysis with market share data |
-| 💰 **Business Model Agent** | Evaluates revenue streams, pricing, and unit economics | Sustainability assessment with financial metrics |
-| 🚨 **Risk Agent** | Identifies downside vectors with structured scoring | Risks scored by Impact × Likelihood (0-100) |
-| 🚀 **Opportunity Agent** | Surfaces growth catalysts with structured scoring | Opportunities scored by Impact × Likelihood (0-100) |
-| ⚖️ **Verdict Agent** | Cross-references all 5 agents and issues final recommendation | **INVEST / PARTNER / WATCH / AVOID** with confidence score |
-
-Every data point is traced back to its source URL and classified into a **4-tier trust system** (Tier 1: Reuters, Bloomberg → Tier 4: Reddit, Twitter).
+| 📰 **News Agent** | Scans for funding rounds, acquisitions, lawsuits, and executive changes. | Sourced breaking news with recency timestamps. |
+| ⚔️ **Competitor Agent** | Maps competitive landscape and market positioning against top rivals. | Competitive moat analysis and head-to-head comparisons. |
+| 💰 **Business Model Agent** | Evaluates revenue streams, pricing strategies, and unit economics. | Financial sustainability assessment. |
+| 🚨 **Risk Agent** | Identifies downside vectors. | Risks scored deterministically by Impact × Likelihood (0-100). |
+| 🚀 **Opportunity Agent** | Surfaces growth catalysts and strategic pivots. | Opportunities scored by Impact × Likelihood (0-100). |
+| ⚖️ **Verdict Agent** | Cross-references the swarm's findings and issues a final recommendation. | **INVEST / PARTNER / WATCH / AVOID** with decision sensitivity analysis. |
 
 ---
 
-## 🏗️ Architecture
+## 🧠 The Architecture
 
+No bloated frameworks (no LangChain, no CrewAI). Just pure, highly optimized Python and `asyncio` for maximum control and minimum latency.
+
+```mermaid
+graph TD
+    User([User Input]) --> NextJS[Next.js Frontend]
+    NextJS -- "POST /api/stream" --> FastAPI[FastAPI Backend]
+    
+    subgraph Orchestration
+        FastAPI --> Gatekeeper{Valid Tech Company?}
+        Gatekeeper -- "INVALID" --> Error[Halt & Return Error]
+        Gatekeeper -- "VALID" --> Orchestrator[Asyncio Orchestrator]
+    end
+
+    subgraph Agent Swarm
+        Orchestrator -->|Concurrent Search & Synthesis| News[News Agent]
+        Orchestrator --> Competitor[Competitor Agent]
+        Orchestrator --> Business[Business Model Agent]
+        Orchestrator --> Risk[Risk Agent]
+        Orchestrator --> Opp[Opportunity Agent]
+    end
+
+    subgraph Synthesis
+        News & Competitor & Business & Risk & Opp --> Verdict[Verdict Agent]
+    end
+
+    Agent Swarm -- "SSE Stream (Real-Time)" --> NextJS
+    Verdict -- "Final Verdict & Reasoning" --> NextJS
+    
+    subgraph Context-Aware Chat
+        NextJS -- "POST /api/chat (with history)" --> Chat[Chat Agent]
+        Chat --> Router{Live Search Needed?}
+        Router -- "Yes" --> LiveSearch[Search Engine]
+        Router -- "No" --> LLM[LLM Response]
+        LiveSearch --> LLM
+        LLM -- "SSE Stream" --> NextJS
+    end
 ```
-User → Next.js Frontend → FastAPI Backend (/api/stream SSE)
-                               ↓
-                         Orchestrator (asyncio)
-                    ┌──────────┼──────────┐
-                    ↓          ↓          ↓        (5 agents run concurrently)
-               News Agent  Competitor  Business Model  Risk  Opportunity
-               (Search→LLM) (Search→LLM) (Search→LLM)  ...    ...
-                    │          │          │
-                    └──────────┼──────────┘
-                               ↓
-                    Verdict Agent (LLM synthesis only)
-                               ↓
-                    SSE stream back to frontend
-```
-
-### Key Design Decisions
-
-- **No agent framework.** Zero dependency on LangChain, CrewAI, or any SDK. Every agent is hand-built Python for full control over prompting, parsing, and error handling.
-- **Provider-agnostic LLM layer.** Swap any OpenAI-compatible API (Fireworks AI, Groq, OpenAI, local vLLM) by changing 3 environment variables. Zero code changes.
-- **Concurrent execution.** All 5 research agents fire simultaneously via `asyncio`, cutting wall-clock time by ~5×.
-- **SSE streaming.** Results appear in real-time as each agent completes — no waiting for the slowest agent.
-- **Evidence quality pipeline.** Deterministic scoring from source trust tiers, citation validation against actual search results, and confidence ceilings (max 7/10 without Tier 1 sources).
 
 ---
 
-## 🖥️ Frontend — Executive Dashboard
+## 🛡️ The Evidence Engine (Anti-Hallucination)
 
-The frontend is a dark-mode, glassmorphism-styled executive dashboard built with **Next.js 16**, **React 19**, **Tailwind CSS 4**, and **shadcn/ui**.
+Standard AI wrappers hallucinate financial metrics. We built a deterministic Evidence Engine to prevent this.
 
-**Key UI Components:**
-- **Recommendation Hero** — Verdict badge with animated confidence ring (SVG)
-- **Data Quality Donut** — Recharts pie chart showing Tier 1-4 source distribution
-- **Risk & Growth Signal Bars** — Impact/Likelihood/Score breakdowns per vector
-- **Agent Report Cards** — Live streaming output with metadata badges, loading skeletons, collapsible source lists, and `(historical)` / `⚠ Unverified Citation` badges
+1. **Deterministic Trust Tiers:** Every source URL is mathematically scored based on a 4-tier domain classification system (Tier 1 = Bloomberg/WSJ, Tier 4 = Reddit/Forums).
+2. **Evidence Quality Receipts:** The UI explicitly shows you *exactly* how the evidence score was calculated (e.g., 2 Tier 1 sources × weight + 4 Tier 3 sources × weight).
+3. **Freshness Decay:** Intelligence rots fast. Sources older than 6 months trigger a freshness penalty multiplier, downgrading the agent's confidence score and forcing reliance on current data.
+4. **Diverse Sourcing Rule:** A citation validator ensures agents synthesize information across multiple unique domains, preventing "single-source dependency" where an agent blindly trusts one biased article.
+5. **Intelligence Gaps Analysis:** The Verdict Agent explicitly lists what data it *couldn't* find (e.g., "Exact profit margins missing") and calculates how much those gaps impact its final confidence score.
+
+---
+
+## 💬 Context-Aware Memory Chat
+
+The dashboard includes a stateful chat panel. It doesn't just read the final report—it actively remembers the last 6 conversational turns and routes queries. If you ask a question that requires new information not found in the baseline report, the Chat Agent autonomously triggers a live web search before answering.
+
+---
+
+## 🖥️ Executive Dashboard UI
+
+A dark-mode, glassmorphism-styled dashboard built with **Next.js 16**, **React 19**, **Tailwind CSS 4**, and **shadcn/ui**.
+
+- **Recommendation Hero:** Verdict badge with animated confidence rings.
+- **Decision Sensitivity:** Explicit conditions that would flip the verdict (e.g., "Flip to Invest if...").
+- **Data Quality Donut:** Recharts pie chart showing the exact distribution of source tiers.
+- **Signal Bars:** Visual breakdown of Risks and Opportunities by their calculated Severity scores.
 
 ---
 
 ## ⚡ AMD Platform Usage
 
-This project runs inference through **Fireworks AI**, which hosts models on **AMD Instinct GPUs**. The active model configuration uses AMD-accelerated infrastructure for all LLM calls:
+This project runs inference through **Fireworks AI**, which hosts models on **AMD Instinct GPUs**. 
 
 - **LLM Provider:** Fireworks AI (AMD hardware)
-- **Active Model:** `qwen3p7-plus` hosted on AMD GPUs via Fireworks
-- **All 6 agents** route through the same AMD-accelerated endpoint
-- **Tested models** include `deepseek-v4-pro`, `kimi-k2p6`, `glm-5p2`, and `gpt-oss-120b` — all on Fireworks/AMD
-
-The architecture is designed to be provider-agnostic: switching between AMD-hosted Fireworks models requires only changing 3 environment variables, making it trivial to benchmark different models on AMD infrastructure.
+- **Active Model:** `qwen3p7-plus` 
+- **Performance:** All 6 agents route through the AMD-accelerated endpoint concurrently, cutting wall-clock time from 3 minutes to ~40 seconds.
+- **Provider-Agnostic:** Want to swap to another OpenAI-compatible endpoint? Change 3 environment variables in `.env`. Zero code changes required.
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Python 3.11+
 - Node.js 18+
 - API keys for Fireworks AI and a search provider (Serper, Brave, or Tavily)
 
-### 1. Clone the repository
-
+### 1. Clone & Setup Backend
 ```bash
 git clone https://github.com/YOUR_USERNAME/competitive-intelligence-agent.git
 cd competitive-intelligence-agent
-```
-
-### 2. Set up the backend
-
-```bash
 python -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file in the project root:
-
+### 2. Configure Environment
+Create a `.env` file in the root:
 ```env
-# LLM Configuration (any OpenAI-compatible API)
+# LLM Configuration
 LLM_BASE_URL=https://api.fireworks.ai/inference/v1
 LLM_API_KEY=your_fireworks_api_key
 LLM_MODEL=accounts/fireworks/models/qwen3p7-plus
 
 # Search Provider (at least one required)
 SERPER_API_KEY=your_serper_key
-BRAVE_API_KEY=your_brave_key        # Optional fallback
-TAVILY_API_KEY=your_tavily_key      # Optional fallback
 ```
 
-### 4. Set up the frontend
-
+### 3. Setup Frontend
 ```bash
 cd frontend
 npm install
 ```
 
-### 5. Run the application
-
+### 4. Run the Application
 **Terminal 1 — Backend:**
 ```bash
 uvicorn main:app --reload
@@ -148,18 +162,15 @@ Open **http://localhost:3000** and start analyzing.
 
 ---
 
-## 🐳 Docker
+## 🐳 Docker Deployment
 
-### Using Docker Compose (recommended)
-
+### Using Docker Compose (Recommended)
 ```bash
 docker-compose up --build
 ```
-
-The app will be available at **http://localhost:3000**.
+Available at **http://localhost:3000**.
 
 ### Using individual Dockerfiles
-
 ```bash
 # Build and run backend
 docker build -t cia-backend -f Dockerfile.backend .
@@ -172,54 +183,10 @@ docker run -p 3000:3000 cia-frontend
 
 ---
 
-## 📁 Project Structure
-
-```
-competitive-intel/
-├── main.py                     # FastAPI entry point
-├── requirements.txt            # Python dependencies
-├── Dockerfile.backend          # Backend container
-├── Dockerfile.frontend         # Frontend container
-├── docker-compose.yml          # Full-stack orchestration
-├── core/
-│   ├── orchestrator.py         # Concurrent agent runner + SSE streaming
-│   ├── llm.py                  # Provider-agnostic LLM client (retry, timeout)
-│   ├── search.py               # Web search + 4-tier trust classification
-│   └── agent_utils.py          # Shared metadata parsing utilities
-├── agents/
-│   ├── news.py                 # Breaking news & events agent
-│   ├── competitor.py           # Competitive landscape agent
-│   ├── business_model.py       # Revenue & unit economics agent
-│   ├── risk.py                 # Risk identification & scoring agent
-│   ├── opportunity.py          # Growth signal identification agent
-│   └── verdict.py              # Cross-agent synthesis & recommendation
-└── frontend/
-    ├── app/                    # Next.js App Router pages
-    ├── components/dashboard/   # Executive dashboard UI components
-    ├── hooks/                  # useAgentStream SSE hook
-    └── lib/                    # Utilities
-```
-
----
-
 ## 🔒 Security
-
-- `.env` files are `.gitignore`d — API keys never touch version control
-- All API keys are server-side only — the frontend never sees them
-- The LLM client validates responses before parsing
-
----
+- **Gatekeeper Validation:** Blocks execution on non-tech/AI company inputs.
+- API keys are completely server-side and `gitignore`d.
+- Strict LLM JSON parsing and validation before rendering to the client.
 
 ## 📄 License
-
 MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Fireworks AI** — AMD-accelerated model inference
-- **Serper** — Google Search API for real-time web grounding
-- **Vercel v0** — Executive dashboard design generation
-- **shadcn/ui** — UI component primitives
-- **Recharts** — Data visualization

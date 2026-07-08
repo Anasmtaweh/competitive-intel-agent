@@ -66,11 +66,16 @@ export function ChatPanel({ company, agents, verdict, isEnabled }: ChatPanelProp
       reasoning: verdict?.reasoning
     });
 
+    const conversationHistory = messages
+      .filter(m => m.type !== "status" && m.type !== "status-complete" && m.content.trim() !== "")
+      .map(m => ({ role: m.role, content: m.content }))
+      .slice(-6);
+
     try {
       const response = await fetch("http://127.0.0.1:8000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ company, query: userMsg, report_context: reportContext }),
+        body: JSON.stringify({ company, query: userMsg, report_context: reportContext, history: conversationHistory }),
       });
 
       if (!response.ok) throw new Error("Failed to connect to chat API");

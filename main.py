@@ -53,6 +53,7 @@ class ChatRequest(BaseModel):
     company: str
     query: str
     report_context: str
+    history: list[dict] = []
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -65,7 +66,7 @@ async def chat_endpoint(request: ChatRequest):
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(
-        run_chat_stream(request.company, request.query, request.report_context),
+        run_chat_stream(request.company, request.query, request.report_context, request.history),
         media_type="text/event-stream",
         headers=headers,
     )
