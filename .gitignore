@@ -30,6 +30,14 @@ old-frontend/
 model_ids.txt
 models.json
 
+# Dev scratch scripts
+fix_prompts.py
+test.py
+v0-prompt.md
+
+# Stale config
+frontend/postcss.conf
+
 # Lock files at root level (stale)
 package-lock.json
 

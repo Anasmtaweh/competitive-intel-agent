@@ -129,13 +129,8 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
-Create a `.env` file in the root:
+Create a `.env` file in the root. Note that the LLM API Key is provided dynamically via the web UI, so you only need to configure your search provider here:
 ```env
-# LLM Configuration
-LLM_BASE_URL=https://api.fireworks.ai/inference/v1
-LLM_API_KEY=your_fireworks_api_key
-LLM_MODEL=accounts/fireworks/models/qwen3p7-plus
-
 # Search Provider (at least one required)
 SERPER_API_KEY=your_serper_key
 ```
@@ -158,7 +153,7 @@ cd frontend
 npm run dev
 ```
 
-Open **http://localhost:3000** and start analyzing.
+Open **http://localhost:3000**. You will be prompted to enter your **Fireworks API Key** directly in the dashboard header to run an analysis.
 
 ---
 

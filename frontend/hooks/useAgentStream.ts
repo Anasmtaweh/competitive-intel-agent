@@ -64,7 +64,7 @@ export function useAgentStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startAnalysis = useCallback((company: string) => {
+  const startAnalysis = useCallback((company: string, apiKey: string = "") => {
     if (!company.trim() || isStreaming) return;
 
     // Reset state — match old frontend exactly
@@ -78,9 +78,11 @@ export function useAgentStream() {
     setError(null);
 
     // Correct URL: /api/stream?company=...
-    const es = new EventSource(
-      `http://localhost:8000/api/stream?company=${encodeURIComponent(company)}`
-    );
+    let url = `http://localhost:8000/api/stream?company=${encodeURIComponent(company)}`;
+    if (apiKey.trim()) {
+      url += `&api_key=${encodeURIComponent(apiKey.trim())}`;
+    }
+    const es = new EventSource(url);
 
     // The backend sends UNNAMED SSE events (just `data: {...}\n\n`)
     // We discriminate by the `type` field inside the JSON payload

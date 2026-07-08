@@ -16,6 +16,9 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
+import contextvars
+
+api_key_context = contextvars.ContextVar("api_key", default=None)
 
 # Anchor .env to the project root (one level above core/) so it loads
 # regardless of the working directory the script is launched from.
@@ -35,13 +38,13 @@ async def call_llm(
     Raises on HTTP errors or missing configuration.
     """
     base_url = os.getenv("LLM_BASE_URL")
-    api_key = os.getenv("LLM_API_KEY")
+    api_key = api_key_context.get() or os.getenv("LLM_API_KEY")
     model = os.getenv("LLM_MODEL")
 
     if not base_url:
         raise ValueError("LLM_BASE_URL is not set in environment variables.")
     if not api_key:
-        raise ValueError("LLM_API_KEY is not set in environment variables.")
+        raise ValueError("LLM_API_KEY is not set in environment variables or request context.")
     if not model:
         raise ValueError("LLM_MODEL is not set in environment variables.")
 
@@ -96,11 +99,11 @@ async def stream_llm(
     Call the configured LLM with a single user prompt and yield chunks as they stream.
     """
     base_url = os.getenv("LLM_BASE_URL")
-    api_key = os.getenv("LLM_API_KEY")
+    api_key = api_key_context.get() or os.getenv("LLM_API_KEY")
     model = os.getenv("LLM_MODEL")
 
     if not base_url or not api_key or not model:
-        raise ValueError("Missing LLM env vars (LLM_BASE_URL, LLM_API_KEY, LLM_MODEL).")
+        raise ValueError("Missing LLM env vars (LLM_BASE_URL, LLM_API_KEY, LLM_MODEL) and no API key in context.")
 
     url = f"{base_url}/chat/completions"
     headers = {
