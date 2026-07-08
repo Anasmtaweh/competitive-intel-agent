@@ -45,7 +45,7 @@ graph TD
         Gatekeeper -- "VALID" --> Orchestrator[Asyncio Orchestrator]
     end
 
-    subgraph Agent Swarm
+    subgraph Agent_Swarm [Agent Swarm]
         Orchestrator -->|Concurrent Search & Synthesis| News[News Agent]
         Orchestrator --> Competitor[Competitor Agent]
         Orchestrator --> Business[Business Model Agent]
@@ -57,10 +57,10 @@ graph TD
         News & Competitor & Business & Risk & Opp --> Verdict[Verdict Agent]
     end
 
-    Agent Swarm -- "SSE Stream (Real-Time)" --> NextJS
+    News & Competitor & Business & Risk & Opp -- "SSE Stream (Real-Time)" --> NextJS
     Verdict -- "Final Verdict & Reasoning" --> NextJS
     
-    subgraph Context-Aware Chat
+    subgraph Context_Aware_Chat [Context-Aware Chat]
         NextJS -- "POST /api/chat (with history)" --> Chat[Chat Agent]
         Chat --> Router{Live Search Needed?}
         Router -- "Yes" --> LiveSearch[Search Engine]
