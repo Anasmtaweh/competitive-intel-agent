@@ -94,7 +94,13 @@ KEY_DECISION_DRIVERS: [2-3 findings that most influenced this verdict, citing ag
 STRONGEST_SUPPORTING_EVIDENCE: [Best evidence FOR this verdict — name the agent and source tier]
 STRONGEST_OPPOSING_EVIDENCE: [Best evidence AGAINST this verdict — name the agent and source tier]
 TRADE_OFF: [One sentence: the core tension that made this verdict non-obvious]
-WHAT_WOULD_CHANGE_THIS: [What future evidence or event would flip this verdict]
+STABILITY: [HIGH/MEDIUM/LOW]
+STABILITY_REASON: [One sentence: what single piece of new information would most likely change this verdict]
+WHAT_WOULD_FLIP_TO_INVEST: [condition] (CRITICAL: Only reference metrics, companies, or events that appear explicitly in the agent reports above. Do not invent thresholds or figures not grounded in the provided evidence. Write N/A if already INVEST.)
+WHAT_WOULD_FLIP_TO_AVOID: [condition] (Same anti-hallucination rule as above. Write N/A if already AVOID.)
+INTELLIGENCE_GAP_1: [description] | CONFIDENCE_IMPACT: +[X]
+INTELLIGENCE_GAP_2: [description] | CONFIDENCE_IMPACT: +[X]
+INTELLIGENCE_GAP_3: [description] | CONFIDENCE_IMPACT: +[X]
 REASONING: [5 sentences of strict synthesis, using measured language and clear reasoning chains.
 1: The overarching narrative. 
 2: Why the main strength was weighted heavily. 
@@ -119,13 +125,22 @@ def parse_verdict(output: str) -> dict:
     verdict = verdict_match.group(1) if verdict_match else "UNKNOWN"
     confidence = int(confidence_match.group(1)) if confidence_match else 5
 
+    stability_match = re.search(r"STABILITY:\s*(HIGH|MEDIUM|LOW)", output, re.IGNORECASE)
+    stability = stability_match.group(1).upper() if stability_match else None
+
+    gap_pattern = r"INTELLIGENCE_GAP_\d+:\s*(.+?)\s*\|\s*CONFIDENCE_IMPACT:\s*\+?(\d+)"
+    gaps_matches = re.findall(gap_pattern, output)
+    intelligence_gaps = [{"description": desc.strip(), "impact": int(imp)} for desc, imp in gaps_matches]
+
     reasoning_raw = extract("REASONING", []) or output
 
     known_labels = [
         'VERDICT:', 'CONFIDENCE:', 'CROSS_AGENT_CONFLICTS:',
         'KEY_DECISION_DRIVERS:', 'STRONGEST_SUPPORTING_EVIDENCE:',
         'STRONGEST_OPPOSING_EVIDENCE:', 'TRADE_OFF:',
-        'WHAT_WOULD_CHANGE_THIS:', 'REASONING:'
+        'STABILITY:', 'STABILITY_REASON:', 'WHAT_WOULD_FLIP_TO_INVEST:',
+        'WHAT_WOULD_FLIP_TO_AVOID:', 'INTELLIGENCE_GAP_1:', 
+        'INTELLIGENCE_GAP_2:', 'INTELLIGENCE_GAP_3:', 'REASONING:'
     ]
     clean_lines = [
         line for line in reasoning_raw.split('\n')
@@ -140,8 +155,12 @@ def parse_verdict(output: str) -> dict:
         "key_decision_drivers": extract("KEY_DECISION_DRIVERS", ["STRONGEST_SUPPORTING_EVIDENCE"]) or "",
         "strongest_supporting_evidence": extract("STRONGEST_SUPPORTING_EVIDENCE", ["STRONGEST_OPPOSING_EVIDENCE"]) or "",
         "strongest_opposing_evidence": extract("STRONGEST_OPPOSING_EVIDENCE", ["TRADE_OFF"]) or "",
-        "trade_off": extract("TRADE_OFF", ["WHAT_WOULD_CHANGE_THIS"]) or "",
-        "what_would_change_this": extract("WHAT_WOULD_CHANGE_THIS", ["REASONING"]) or "",
+        "trade_off": extract("TRADE_OFF", ["STABILITY"]) or "",
+        "stability": stability,
+        "stability_reason": extract("STABILITY_REASON", ["WHAT_WOULD_FLIP_TO_INVEST"]) or "",
+        "what_would_flip_to_invest": extract("WHAT_WOULD_FLIP_TO_INVEST", ["WHAT_WOULD_FLIP_TO_AVOID"]) or "",
+        "what_would_flip_to_avoid": extract("WHAT_WOULD_FLIP_TO_AVOID", ["INTELLIGENCE_GAP_1", "REASONING"]) or "",
+        "intelligence_gaps": intelligence_gaps,
         "reasoning": reasoning_clean,
     }
 

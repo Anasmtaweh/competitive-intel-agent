@@ -10,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from core.orchestrator import run_analysis
+from core.chat import run_chat_stream
+from pydantic import BaseModel
 
 app = FastAPI(title="Competitive Intelligence Agent")
 
@@ -46,6 +48,27 @@ async def stream_analysis(company: str = Query(..., min_length=1)):
         headers=headers,
     )
 
+
+class ChatRequest(BaseModel):
+    company: str
+    query: str
+    report_context: str
+
+@app.post("/api/chat")
+async def chat_endpoint(request: ChatRequest):
+    """
+    Stream context-aware chat response for a specific company analysis.
+    """
+    headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(
+        run_chat_stream(request.company, request.query, request.report_context),
+        media_type="text/event-stream",
+        headers=headers,
+    )
 
 # After React is built, this serves the frontend
 # app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")

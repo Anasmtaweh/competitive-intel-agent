@@ -13,6 +13,8 @@ export type AgentState = {
   missingInformation: string | null;
   internalConflicts: string | null;
   unverifiedCitationCount: number;
+  evidenceReceipt: any | null;
+  freshnessAdjusted: boolean;
 };
 
 export type VerdictState = {
@@ -26,18 +28,26 @@ export type VerdictState = {
   strongest_supporting_evidence: string;
   strongest_opposing_evidence: string;
   what_would_change_this: string;
+  stability: string | null;
+  stability_reason: string | null;
+  what_would_flip_to_invest: string | null;
+  what_would_flip_to_avoid: string | null;
+  intelligence_gaps: any[];
 };
 
 const initialAgentState: AgentState = { 
   status: 'idle', output: '', sources: [], risks: [], opportunities: [], 
   latestDate: null, sourceQuality: {}, confidence: null, evidenceQuality: null, 
-  missingInformation: null, internalConflicts: null, unverifiedCitationCount: 0 
+  missingInformation: null, internalConflicts: null, unverifiedCitationCount: 0,
+  evidenceReceipt: null, freshnessAdjusted: false
 };
 
 const initialVerdictState: VerdictState = {
   status: 'idle', verdict: null, confidence: null, reasoning: '',
   cross_agent_conflicts: null, trade_off: '', key_decision_drivers: '',
-  strongest_supporting_evidence: '', strongest_opposing_evidence: '', what_would_change_this: ''
+  strongest_supporting_evidence: '', strongest_opposing_evidence: '', what_would_change_this: '',
+  stability: null, stability_reason: null, what_would_flip_to_invest: null, 
+  what_would_flip_to_avoid: null, intelligence_gaps: []
 };
 
 export function useAgentStream() {
@@ -94,6 +104,8 @@ export function useAgentStream() {
               missingInformation: data.missing_information || null,
               internalConflicts: data.internal_conflicts || null,
               unverifiedCitationCount: data.unverified_citation_count || 0,
+              evidenceReceipt: data.evidence_receipt || null,
+              freshnessAdjusted: data.freshness_adjusted || false,
             },
           }));
         } else if (data.type === 'verdict_complete') {
@@ -108,6 +120,11 @@ export function useAgentStream() {
             strongest_supporting_evidence: data.strongest_supporting_evidence || '',
             strongest_opposing_evidence: data.strongest_opposing_evidence || '',
             what_would_change_this: data.what_would_change_this || '',
+            stability: data.stability || null,
+            stability_reason: data.stability_reason || null,
+            what_would_flip_to_invest: data.what_would_flip_to_invest || null,
+            what_would_flip_to_avoid: data.what_would_flip_to_avoid || null,
+            intelligence_gaps: data.intelligence_gaps || [],
           });
           setIsStreaming(false);
           es.close();

@@ -113,7 +113,8 @@ async def risk_agent(company: str) -> dict:
     display_output = re.split(r"\nCONFIDENCE:", display_output)[0].strip()
     
     metadata = parse_metadata(raw_output)
-    evidence_quality = calculate_evidence_quality(unique_results)
+    evidence_data = calculate_evidence_quality(unique_results)
+
     # Extract and validate source URLs
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
@@ -124,7 +125,9 @@ async def risk_agent(company: str) -> dict:
         "sources": sources,
         "latest_date": latest_date,
         "source_quality": source_quality,
-        "evidence_quality": evidence_quality,
+        "evidence_quality": evidence_data["score"],
+        "evidence_receipt": evidence_data["receipt"],
+        "freshness_adjusted": evidence_data["freshness_adjusted"],
         "unverified_citation_count": unverified_citation_count,
         "risks": risks,
         **metadata,

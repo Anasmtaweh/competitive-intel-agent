@@ -84,3 +84,54 @@ async def call_llm(
                     continue
                 # If we exhausted retries or it's a different error, re-raise
                 raise
+
+
+async def stream_llm(
+    prompt: str,
+    temperature: float = 0.5,
+    max_tokens: int = 8000,
+):
+    """
+    Call the configured LLM with a single user prompt and yield chunks as they stream.
+    """
+    base_url = os.getenv("LLM_BASE_URL")
+    api_key = os.getenv("LLM_API_KEY")
+    model = os.getenv("LLM_MODEL")
+
+    if not base_url or not api_key or not model:
+        raise ValueError("Missing LLM env vars (LLM_BASE_URL, LLM_API_KEY, LLM_MODEL).")
+
+    url = f"{base_url}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": True,
+    }
+
+    import json
+    
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream("POST", url, headers=headers, json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line:
+                    continue
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        if "choices" in chunk and len(chunk["choices"]) > 0:
+                            delta = chunk["choices"][0].get("delta", {})
+                            content = delta.get("content")
+                            if content:
+                                yield content
+                    except json.JSONDecodeError:
+                        continue

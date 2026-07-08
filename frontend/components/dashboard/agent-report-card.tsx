@@ -30,12 +30,24 @@ export function AgentReportCard({ report }: { report: { title: string, id: strin
 
       // Check if it's a bullet point
       const isBullet = line.trim().startsWith('•') || line.trim().startsWith('- ');
-      const content = line.trim().replace(/^•\s*/, '').replace(/^-\s+/, '');
+      let content = line.trim().replace(/^•\s*/, '').replace(/^-\s+/, '');
+
+      // Prettify URLs to only show domain, handling trailing punctuation
+      content = content.replace(/(—\s*Source:\s*|,\s*)(https?:\/\/[^\s]+)/gi, (match, prefix, url) => {
+        try {
+          const cleanUrl = url.replace(/[.,;)]+$/, '');
+          const domain = new URL(cleanUrl).hostname.replace('www.', '');
+          const suffix = url.slice(cleanUrl.length); // keep trailing punctuation
+          return `${prefix}${domain}${suffix}`;
+        } catch {
+          return match;
+        }
+      });
 
       return (
-        <div key={i} className={`flex items-start gap-1.5 text-sm leading-relaxed ${isBullet ? 'text-foreground/85' : 'text-muted-foreground'}`}>
+        <div key={i} className={`flex items-start gap-1.5 text-sm leading-relaxed ${isBullet ? 'text-foreground/90' : 'text-foreground/75'}`}>
           {isBullet && <Dot className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />}
-          <span>{renderWithHistorical(content, `line-${i}`)}</span>
+          <span className="flex-1 min-w-0 break-words [word-break:break-word]">{renderWithHistorical(content, `line-${i}`)}</span>
         </div>
       );
     });
@@ -61,21 +73,55 @@ export function AgentReportCard({ report }: { report: { title: string, id: strin
             <span>🎯 Confidence: <strong className="text-foreground">{data.confidence}/10</strong></span>
           )}
           {data.evidenceQuality != null && (
-            <span>📊 Evidence Quality: <strong className="text-foreground">{data.evidenceQuality}/10</strong></span>
+            <div className="group relative flex items-center cursor-help">
+              <span>📊 Evidence Quality: <strong className="text-foreground">{data.evidenceQuality}/10</strong></span>
+              {data.freshnessAdjusted && (
+                <span className="ml-1.5 text-[10px] uppercase tracking-wider text-amber-500/80 font-semibold border border-amber-500/30 bg-amber-500/10 px-1.5 py-px rounded">Freshness-Adjusted</span>
+              )}
+              {data.evidenceReceipt && (
+                <div className="absolute left-0 top-full mt-2 hidden w-64 z-50 group-hover:block rounded-lg border border-border bg-card p-3 shadow-xl text-xs text-muted-foreground animate-in fade-in zoom-in-95">
+                  <div className="font-semibold text-foreground mb-2">Evidence Breakdown</div>
+                  <div className="grid grid-cols-[1fr_auto] gap-y-1 gap-x-4">
+                    {data.evidenceReceipt.tier_1?.count > 0 && (
+                      <><span>Tier 1 ({data.evidenceReceipt.tier_1.count})</span><span className="text-right text-foreground">+{data.evidenceReceipt.tier_1.count * data.evidenceReceipt.tier_1.weight}</span></>
+                    )}
+                    {data.evidenceReceipt.tier_2?.count > 0 && (
+                      <><span>Tier 2 ({data.evidenceReceipt.tier_2.count})</span><span className="text-right text-foreground">+{data.evidenceReceipt.tier_2.count * data.evidenceReceipt.tier_2.weight}</span></>
+                    )}
+                    {data.evidenceReceipt.tier_3?.count > 0 && (
+                      <><span>Tier 3 ({data.evidenceReceipt.tier_3.count})</span><span className="text-right text-foreground">+{data.evidenceReceipt.tier_3.count * data.evidenceReceipt.tier_3.weight}</span></>
+                    )}
+                    {data.evidenceReceipt.tier_4?.count > 0 && (
+                      <><span>Tier 4 ({data.evidenceReceipt.tier_4.count})</span><span className="text-right text-foreground">+{data.evidenceReceipt.tier_4.count * data.evidenceReceipt.tier_4.weight}</span></>
+                    )}
+                    {data.evidenceReceipt.count_bonus > 0 && (
+                      <><span>Volume Bonus</span><span className="text-right text-foreground">+{data.evidenceReceipt.count_bonus}</span></>
+                    )}
+                    {data.evidenceReceipt.freshness_multiplier < 1.0 && (
+                      <><span>Time Decay Penalty</span><span className="text-right text-red-400">x{data.evidenceReceipt.freshness_multiplier}</span></>
+                    )}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-foreground">
+                    <span>Final Score</span>
+                    <span>{data.evidenceReceipt.final_score}/10</span>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
 
       {/* Missing information warning */}
       {data.status === 'complete' && data.missingInformation && (
-        <div className="rounded-lg border-l-[3px] border-l-amber-500 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+        <div className="rounded-lg border-l-[3px] border-l-amber-500 bg-amber-500/10 px-3 py-2 text-xs text-amber-300 break-words [word-break:break-word] whitespace-pre-wrap">
           <strong>Missing:</strong> {data.missingInformation}
         </div>
       )}
 
       {/* Internal conflicts warning */}
       {data.status === 'complete' && data.internalConflicts && (
-        <div className="rounded-lg border-l-[3px] border-l-red-500 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+        <div className="rounded-lg border-l-[3px] border-l-red-500 bg-red-500/10 px-3 py-2 text-xs text-red-300 break-words [word-break:break-word] whitespace-pre-wrap">
           <strong>⚠ Internal conflict:</strong> {data.internalConflicts}
         </div>
       )}

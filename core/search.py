@@ -219,79 +219,122 @@ def summarize_source_quality(results: list[dict]) -> dict:
     return counts
 
 
-def calculate_evidence_quality(results: list[dict]) -> int:
+def parse_date(date_str: str):
+    """Attempt to parse a date string into a datetime object."""
+    from datetime import datetime, timedelta
+    if not date_str:
+        return None
+
+    # Handle relative dates like "3 days ago", "1 year ago", "6 hours ago"
+    relative_match = re.match(
+        r"(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago",
+        date_str.strip(),
+        re.IGNORECASE,
+    )
+    if relative_match:
+        amount = int(relative_match.group(1))
+        unit = relative_match.group(2).lower()
+        now = datetime.now()
+        deltas = {
+            "second": timedelta(seconds=amount),
+            "minute": timedelta(minutes=amount),
+            "hour": timedelta(hours=amount),
+            "day": timedelta(days=amount),
+            "week": timedelta(weeks=amount),
+            "month": timedelta(days=amount * 30),
+            "year": timedelta(days=amount * 365),
+        }
+        return now - deltas.get(unit, timedelta(0))
+
+    # Try common absolute date formats
+    formats = [
+        "%b %d, %Y",   # Jun 15, 2026
+        "%B %d, %Y",   # June 15, 2026
+        "%Y-%m-%d",    # 2026-06-15
+        "%m/%d/%Y",    # 06/15/2026
+        "%d %b %Y",    # 15 Jun 2026
+        "%d %B %Y",    # 15 June 2026
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str.strip(), fmt)
+        except ValueError:
+            continue
+
+    return None
+
+
+def calculate_evidence_quality(results: list[dict]) -> dict:
     """
-    Computes evidence_quality (1-10) deterministically from source tiers.
-    No LLM involvement. Higher tier sources and more total sources = higher score.
+    Computes evidence_quality (1-10) deterministically from source tiers and freshness.
+    Returns a dict with 'score', 'receipt', and 'freshness_adjusted'.
     """
+    from datetime import datetime
+    
+    receipt = {
+        "tier_1": {"count": 0, "weight": 10},
+        "tier_2": {"count": 0, "weight": 7},
+        "tier_3": {"count": 0, "weight": 4},
+        "tier_4": {"count": 0, "weight": 1},
+        "count_bonus": 0,
+        "freshness_multiplier": 1.0,
+        "final_score": 1
+    }
+    
     if not results:
-        return 1
+        return {"score": 1, "receipt": receipt, "freshness_adjusted": False}
 
     tier_weights = {1: 10, 2: 7, 3: 4, 4: 1}
-    tiers = [get_trust_tier(r.get("url", "")) for r in results]
+    tiers = []
+    decay_multipliers = []
+    now = datetime.now()
     
+    for r in results:
+        tier = get_trust_tier(r.get("url", ""))
+        tiers.append(tier)
+        receipt[f"tier_{tier}"]["count"] += 1
+        
+        # Calculate freshness decay
+        date_str = r.get("date")
+        multiplier = 0.6 # default for unparseable or >180 days
+        if date_str:
+            try:
+                parsed = parse_date(date_str)
+                if parsed:
+                    days_old = (now - parsed).days
+                    if days_old <= 30:
+                        multiplier = 1.0
+                    elif days_old <= 90:
+                        multiplier = 0.9
+                    elif days_old <= 180:
+                        multiplier = 0.75
+            except Exception:
+                pass # default to 0.6 on crash
+        decay_multipliers.append(multiplier)
+        
     avg_weight = sum(tier_weights.get(t, 4) for t in tiers) / len(tiers)
     
     # Bonus for having multiple sources (more corroboration)
     count_bonus = min(len(results) / 5, 1.0) * 1.5
+    receipt["count_bonus"] = round(count_bonus, 2)
     
-    score = avg_weight * 0.85 + count_bonus
-    return max(1, min(10, round(score)))
-
+    base_score = avg_weight * 0.85 + count_bonus
+    
+    # Apply average freshness decay
+    avg_decay = sum(decay_multipliers) / len(decay_multipliers) if decay_multipliers else 1.0
+    receipt["freshness_multiplier"] = round(avg_decay, 2)
+    
+    final_score = base_score * avg_decay
+    score_int = max(1, min(10, round(final_score)))
+    receipt["final_score"] = score_int
+    
+    return {
+        "score": score_int,
+        "receipt": receipt,
+        "freshness_adjusted": avg_decay < 1.0
+    }
 
 def get_latest_date(results: list[dict]) -> str | None:
-    """
-    Parse all date strings in the results and return the one that represents
-    the most recent point in time.
-
-    Handles absolute dates (e.g., "Jun 15, 2026", "Mar 31, 2026") and
-    relative dates (e.g., "3 days ago", "1 year ago").
-    Returns the raw date string from the result, not a parsed version.
-    """
-    from datetime import datetime, timedelta
-
-    def _parse_date(date_str: str) -> datetime | None:
-        """Attempt to parse a date string into a datetime object."""
-        if not date_str:
-            return None
-
-        # Handle relative dates like "3 days ago", "1 year ago", "6 hours ago"
-        relative_match = re.match(
-            r"(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago",
-            date_str.strip(),
-            re.IGNORECASE,
-        )
-        if relative_match:
-            amount = int(relative_match.group(1))
-            unit = relative_match.group(2).lower()
-            now = datetime.now()
-            deltas = {
-                "second": timedelta(seconds=amount),
-                "minute": timedelta(minutes=amount),
-                "hour": timedelta(hours=amount),
-                "day": timedelta(days=amount),
-                "week": timedelta(weeks=amount),
-                "month": timedelta(days=amount * 30),
-                "year": timedelta(days=amount * 365),
-            }
-            return now - deltas.get(unit, timedelta(0))
-
-        # Try common absolute date formats
-        formats = [
-            "%b %d, %Y",   # Jun 15, 2026
-            "%B %d, %Y",   # June 15, 2026
-            "%Y-%m-%d",    # 2026-06-15
-            "%m/%d/%Y",    # 06/15/2026
-            "%d %b %Y",    # 15 Jun 2026
-            "%d %B %Y",    # 15 June 2026
-        ]
-        for fmt in formats:
-            try:
-                return datetime.strptime(date_str.strip(), fmt)
-            except ValueError:
-                continue
-
-        return None
 
     best_date_str = None
     best_parsed = None
@@ -300,7 +343,7 @@ def get_latest_date(results: list[dict]) -> str | None:
         raw = r.get("date")
         if not raw:
             continue
-        parsed = _parse_date(raw)
+        parsed = parse_date(raw)
         if parsed is not None:
             if best_parsed is None or parsed > best_parsed:
                 best_parsed = parsed
