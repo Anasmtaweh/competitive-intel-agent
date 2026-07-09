@@ -71,5 +71,6 @@ async def chat_endpoint(request: ChatRequest):
         headers=headers,
     )
 
-# After React is built, this serves the frontend
-# app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+import os
+if os.path.exists("frontend/out"):
+    app.mount("/", StaticFiles(directory="frontend/out", html=True), name="static")

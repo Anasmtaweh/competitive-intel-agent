@@ -161,22 +161,17 @@ Open **http://localhost:3000** to run an analysis.
 
 ## 🐳 Docker Deployment
 
-### Using Docker Compose (Recommended)
+This project uses a unified multi-stage Dockerfile that builds the static Next.js frontend and serves it via the FastAPI backend inside a single container. This makes it extremely easy to deploy on platforms like Hugging Face Spaces or Render.
+
 ```bash
-docker-compose up --build
+# Build the unified container
+docker build -t competitive-intel .
+
+# Run the container (maps the internal port 7860 to localhost:3000)
+docker run -p 3000:7860 --env-file .env competitive-intel
 ```
+
 Available at **http://localhost:3000**.
-
-### Using individual Dockerfiles
-```bash
-# Build and run backend
-docker build -t cia-backend -f Dockerfile.backend .
-docker run -p 8000:8000 --env-file .env cia-backend
-
-# Build and run frontend
-docker build -t cia-frontend -f Dockerfile.frontend ./frontend
-docker run -p 3000:3000 cia-frontend
-```
 
 ---
 
