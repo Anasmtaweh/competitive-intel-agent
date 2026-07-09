@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 # Anchor .env to the project root (one level above core/) so it loads
 # regardless of the working directory the script is launched from.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(_PROJECT_ROOT / ".env", override=True)
+load_dotenv(_PROJECT_ROOT / ".env", override=False)
 
 # ---------------------------------------------------------------------------
 # Provider implementations
@@ -429,25 +429,51 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
 
 
 def extract_cited_urls(text: str) -> list[str]:
-    """Extracts all URLs that appear after 'Source:' in the agent output."""
-    # Matches "Source: https://..." OR "Source: [https://...](...)"
-    pattern = r"Source:\s*\[?(https?://[^\s,\])]+)"
+    """Extracts all strings that appear after 'Source:' in the agent output."""
+    # Matches "Source: https://..." OR "Source: [blog.google](...)" OR "Source: blog.google"
+    # We capture any non-whitespace string immediately following "Source: " or "Source: ["
+    pattern = r"Source:\s*\[?([^\s,\])]+)"
     return re.findall(pattern, text)
 
 
 def validate_citations(text: str, unique_results: list[dict]) -> dict:
     """
-    Checks each cited URL against the real search result URLs.
-    Returns dict with: verified_sources (exact matches), 
-    unverified_count (citations that didn't match anything real).
+    Checks each cited string against the real search result URLs.
+    Includes fallback substring matching for abbreviated domains, prioritizing the longest match.
     """
     real_urls = {r["url"] for r in unique_results}
-    cited_urls = extract_cited_urls(text)
+    cited_strings = extract_cited_urls(text)
     
-    verified = [u for u in cited_urls if u in real_urls]
-    unverified_count = len(cited_urls) - len(verified)
+    verified = []
+    unverified_count = 0
     
+    for cited in cited_strings:
+        cited_lower = cited.lower()
+        # 1. Exact match
+        if cited in real_urls:
+            verified.append(cited)
+            continue
+            
+        # 2. Substring match fallback (prioritize longest matching real URL)
+        matched_real = None
+        longest_match_len = -1
+        
+        for real_url in real_urls:
+            if cited_lower in real_url.lower():
+                # Pick the longest matching URL (most specific match)
+                if len(real_url) > longest_match_len:
+                    longest_match_len = len(real_url)
+                    matched_real = real_url
+                    
+        if matched_real:
+            verified.append(matched_real)
+        else:
+            unverified_count += 1
+            
     return {
         "verified_sources": list(dict.fromkeys(verified)),  # dedupe, preserve order
         "unverified_count": unverified_count,
     }
+
+
+

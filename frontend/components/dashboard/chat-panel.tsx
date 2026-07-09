@@ -6,7 +6,6 @@ interface ChatPanelProps {
   agents: any;
   verdict: any;
   isEnabled: boolean;
-  apiKey?: string;
 }
 
 interface Message {
@@ -15,7 +14,7 @@ interface Message {
   type?: "text" | "status" | "status-complete";
 }
 
-export function ChatPanel({ company, agents, verdict, isEnabled, apiKey }: ChatPanelProps) {
+export function ChatPanel({ company, agents, verdict, isEnabled }: ChatPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -72,15 +71,11 @@ export function ChatPanel({ company, agents, verdict, isEnabled, apiKey }: ChatP
       .map(m => ({ role: m.role, content: m.content }))
       .slice(-6);
 
-      const bodyPayload: any = { company, query: userMsg, report_context: reportContext, history: conversationHistory };
-      if (apiKey?.trim()) {
-        bodyPayload.api_key = apiKey.trim();
-      }
-
+    try {
       const response = await fetch("http://127.0.0.1:8000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload),
+        body: JSON.stringify({ company, query: userMsg, report_context: reportContext, history: conversationHistory }),
       });
 
       if (!response.ok) throw new Error("Failed to connect to chat API");

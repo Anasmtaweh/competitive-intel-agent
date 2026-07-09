@@ -64,7 +64,7 @@ export function useAgentStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startAnalysis = useCallback((company: string, apiKey: string = "") => {
+  const startAnalysis = useCallback((company: string) => {
     if (!company.trim() || isStreaming) return;
 
     // Reset state — match old frontend exactly
@@ -77,12 +77,9 @@ export function useAgentStream() {
     );
     setError(null);
 
-    // Correct URL: /api/stream?company=...
-    let url = `http://localhost:8000/api/stream?company=${encodeURIComponent(company)}`;
-    if (apiKey.trim()) {
-      url += `&api_key=${encodeURIComponent(apiKey.trim())}`;
-    }
-    const es = new EventSource(url);
+    const es = new EventSource(
+      `http://localhost:8000/api/stream?company=${encodeURIComponent(company)}`
+    );
 
     // The backend sends UNNAMED SSE events (just `data: {...}\n\n`)
     // We discriminate by the `type` field inside the JSON payload
@@ -133,6 +130,13 @@ export function useAgentStream() {
         } else if (data.type === 'error') {
           if (data.agent === 'validator') {
             setError(data.message);
+            // Issue 3: Wipe skeleton agent cards and reset verdict to idle immediately
+            setAgents(prev =>
+              Object.fromEntries(
+                Object.keys(prev).map(k => [k, { ...initialAgentState }])
+              ) as any
+            );
+            setVerdict({ ...initialVerdictState });
             setIsStreaming(false);
             es.close();
           } else if (data.agent === 'verdict') {

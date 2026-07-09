@@ -24,8 +24,9 @@ INSTRUCTIONS:
    - IMPACT: 1-10 (how severe would this be if it materialized fully)
    - LIKELIHOOD: 1-10 (how probable is this risk based on current evidence)
 3. ONE sentence per risk explaining why it matters.
-4. Cite source URLs.
-5. Only include risks supported by evidence in the search results.
+4. PROPER NOUNS: Do not hallucinate or guess names. You must spell the names of individuals, products, and companies EXACTLY as they appear in the search results.
+5. Cite source URLs.
+6. Only include risks supported by evidence in the search results.
 6. If a source's Date is more than 6 months before today's date listed above, or describes an event that more recent sources contradict or supersede, do NOT present it as current fact. Either omit it or explicitly mark it as historical (e.g., 'as of a [date] announcement, this may since have changed').
 7. Only cite a URL that is character-for-character identical to one of the URLs explicitly listed in the search results above. Do not generate, infer, paraphrase, or guess at any URL. If you cannot find a URL that exactly matches, do not make the claim.
 8. The URL you cite for each claim must be the specific source that actually discusses THAT claim. Do not attach a URL from a different topic just because it appeared in your search results. For example, if a source is about a Microsoft partnership, do not cite it for a claim about an AWS partnership, even if both appear in your results. Re-read the source's title and content before citing it — the URL and the claim must match topically.
@@ -36,6 +37,7 @@ INSTRUCTIONS:
 13. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 14. TONE: Write like an analyst, not a sensationalist. Use measured language (e.g., "faces significant exposure to," "current evidence suggests," "introduces material uncertainty"). NEVER use absolute or hyperbolic language like "existential," "catastrophic," "guaranteed failure," or "doomed." Every risk description must be proportional to the evidence and defensible if challenged. Clearly distinguish between what has already happened (facts) and what is projected or feared (estimates).
 15. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
+16. NO REASONING: DO NOT output any step-by-step reasoning, scratchpad, or inner monologue. Start your response IMMEDIATELY with the requested OUTPUT FORMAT.
 
 OUTPUT FORMAT:
 RISK_1|{company_name}|IMPACT:[1-10]|LIKELIHOOD:[1-10]|[Risk name]
@@ -84,11 +86,11 @@ def parse_risks(output: str) -> list[dict]:
 
 async def risk_agent(company: str) -> dict:
     queries = [
-        f"{company} risks challenges problems 2026",
-        f"{company} lawsuit legal regulatory fine 2026",
-        f"{company} CEO leadership departure fired controversy",
-        f"{company} layoffs restructuring financial trouble",
-        f"{company} competition threat market share loss",
+        f"{company} artificial intelligence AI risks challenges problems 2026",
+        f"{company} artificial intelligence AI lawsuit legal regulatory fine 2026",
+        f"{company} artificial intelligence AI CEO leadership departure fired controversy",
+        f"{company} artificial intelligence AI layoffs restructuring financial trouble",
+        f"{company} artificial intelligence AI competition threat market share loss",
     ]
 
     all_results = []
@@ -120,6 +122,14 @@ async def risk_agent(company: str) -> dict:
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
     unverified_citation_count = citation_check["unverified_count"]
+
+    # Check for hallucinated sources instead of hallucinated proper nouns
+    if unverified_citation_count > 0:
+        warning_msg = f"WARNING: {unverified_citation_count} cited sources were not found in the search results. Claims may be hallucinated."
+        if not metadata.get("internal_conflicts") or metadata["internal_conflicts"].upper() == "NONE":
+            metadata["internal_conflicts"] = warning_msg
+        else:
+            metadata["internal_conflicts"] += f" | {warning_msg}"
 
     return {
         "output": display_output,

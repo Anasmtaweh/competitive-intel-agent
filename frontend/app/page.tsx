@@ -12,11 +12,10 @@ import { useMemo, useState } from "react"
 export default function Page() {
   const { agents, verdict, isStreaming, error, startAnalysis } = useAgentStream();
   const [currentCompany, setCurrentCompany] = useState("");
-  const [apiKey, setApiKey] = useState("");
 
   const handleSearch = (company) => {
     setCurrentCompany(company);
-    startAnalysis(company, apiKey);
+    startAnalysis(company);
   };
 
   // Prepare data for AgentReportCard
@@ -44,12 +43,7 @@ export default function Page() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[98vw] flex-col gap-8 px-5 pb-20 md:px-8">
-      <DashboardHeader 
-        onSearch={handleSearch} 
-        isStreaming={isStreaming} 
-        apiKey={apiKey} 
-        setApiKey={setApiKey} 
-      />
+      <DashboardHeader onSearch={handleSearch} isStreaming={isStreaming} />
 
       {error && (
         <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-xl text-center">
@@ -91,7 +85,6 @@ export default function Page() {
         agents={agents} 
         verdict={verdict} 
         isEnabled={isAnalysisComplete} 
-        apiKey={apiKey}
       />
     </main>
   )

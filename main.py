@@ -11,7 +11,6 @@ from fastapi.staticfiles import StaticFiles
 
 from core.orchestrator import run_analysis
 from core.chat import run_chat_stream
-from core.llm import api_key_context
 from pydantic import BaseModel
 
 app = FastAPI(title="Competitive Intelligence Agent")
@@ -33,12 +32,10 @@ async def health_check():
 
 
 @app.get("/api/stream")
-async def stream_analysis(company: str = Query(..., min_length=1), api_key: str = Query(None)):
+async def stream_analysis(company: str = Query(..., min_length=1)):
     """
     Stream competitive intelligence analysis results via Server-Sent Events (SSE).
     """
-    if api_key:
-        api_key_context.set(api_key)
     headers = {
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
@@ -57,16 +54,12 @@ class ChatRequest(BaseModel):
     query: str
     report_context: str
     history: list[dict] = []
-    api_key: str = None
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     """
     Stream context-aware chat response for a specific company analysis.
     """
-    if request.api_key:
-        api_key_context.set(request.api_key)
-        
     headers = {
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",

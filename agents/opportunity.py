@@ -24,8 +24,9 @@ INSTRUCTIONS:
    - IMPACT: 1-10 (how beneficial would this be if it materialized fully)
    - LIKELIHOOD: 1-10 (how probable is this opportunity based on current evidence)
 3. ONE sentence per opportunity explaining why it matters to an investor.
-4. Cite source URLs.
-5. Only include opportunities supported by evidence from the search results.
+4. PROPER NOUNS: Do not hallucinate or guess names. You must spell the names of individuals, products, and companies EXACTLY as they appear in the search results.
+5. Cite source URLs.
+6. Only include opportunities supported by evidence from the search results.
 6. Look for: new partnerships, market expansion, product launches, customer growth, favorable regulatory conditions, talent acquisition.
 7. If a source's Date is more than 6 months before today's date listed above, or describes an event that more recent sources contradict or supersede, do NOT present it as current fact. Either omit it or explicitly mark it as historical (e.g., 'as of a [date] announcement, this may since have changed').
 8. Only cite a URL that is character-for-character identical to one of the URLs explicitly listed in the search results above. Do not generate, infer, paraphrase, or guess at any URL. If you cannot find a URL that exactly matches, do not make the claim.
@@ -37,6 +38,7 @@ INSTRUCTIONS:
 14. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 15. TONE: Write like an analyst, not a promoter. Use measured language (e.g., "appears to," "suggests," "substantially improves," "provides significant runway"). NEVER use absolute or hyperbolic language like "guarantees," "ensures," "dominates," "insurmountable," or "massive." Every claim must be defensible if challenged. Clearly distinguish between what has already happened (facts) and what is projected or targeted (estimates).
 16. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
+17. NO REASONING: DO NOT output any step-by-step reasoning, scratchpad, or inner monologue. Start your response IMMEDIATELY with the requested OUTPUT FORMAT.
 
 OUTPUT FORMAT:
 OPPORTUNITY_1|{company_name}|IMPACT:[1-10]|LIKELIHOOD:[1-10]|[Opportunity name]
@@ -85,10 +87,10 @@ def parse_opportunities(output: str) -> list[dict]:
 
 async def opportunity_agent(company: str) -> dict:
     queries = [
-        f"{company} growth expansion new market 2026",
-        f"{company} partnership integration deal 2026",
-        f"{company} new product launch feature announcement",
-        f"{company} award recognition momentum positive 2026",
+        f"{company} artificial intelligence AI growth expansion new market 2026",
+        f"{company} artificial intelligence AI partnership integration deal 2026",
+        f"{company} artificial intelligence AI new product launch feature announcement",
+        f"{company} artificial intelligence AI award recognition momentum positive 2026",
     ]
 
     all_results = []
@@ -120,6 +122,14 @@ async def opportunity_agent(company: str) -> dict:
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
     unverified_citation_count = citation_check["unverified_count"]
+
+    # Check for hallucinated sources instead of hallucinated proper nouns
+    if unverified_citation_count > 0:
+        warning_msg = f"WARNING: {unverified_citation_count} cited sources were not found in the search results. Claims may be hallucinated."
+        if not metadata.get("internal_conflicts") or metadata["internal_conflicts"].upper() == "NONE":
+            metadata["internal_conflicts"] = warning_msg
+        else:
+            metadata["internal_conflicts"] += f" | {warning_msg}"
 
     return {
         "output": display_output,

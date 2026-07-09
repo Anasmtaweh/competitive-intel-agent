@@ -21,8 +21,9 @@ INSTRUCTIONS:
 2. Identify who their primary customers are (enterprises, developers, consumers, governments, etc.)
 3. Identify their pricing model if publicly available.
 4. Write ONE sentence on whether this model appears sustainable at scale.
-5. Cite source URLs for all claims.
-6. If pricing or revenue data is not in the search results, write "Not publicly disclosed."
+5. PROPER NOUNS: Do not hallucinate or guess names. You must spell the names of individuals, products, and companies EXACTLY as they appear in the search results.
+6. Cite source URLs for all claims.
+7. If pricing or revenue data is not in the search results, write "Not publicly disclosed."
 7. When multiple sources give conflicting figures for the same metric, use the most recently dated source and note the date.
 8. Sources labeled [Tier 1] are most reliable. Prefer them over lower-tier sources when information conflicts.
 9. If a source's Date is more than 6 months before today's date listed above, or describes an event that more recent sources contradict or supersede, do NOT present it as current fact. Either omit it or explicitly mark it as historical (e.g., 'as of a [date] announcement, this may since have changed').
@@ -35,6 +36,7 @@ INSTRUCTIONS:
 16. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 17. TONE: Write like an analyst, not a promoter. Use measured language (e.g., "appears sustainable," "suggests strong unit economics," "revenue growth indicates"). NEVER use absolute or hyperbolic language like "revolutionary," "unprecedented," "guaranteed," or "proven." Every claim must be proportional to the evidence and defensible if challenged. Clearly distinguish between verified financial results and projected or targeted figures.
 18. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
+19. NO REASONING: DO NOT output any step-by-step reasoning, scratchpad, or inner monologue. Start your response IMMEDIATELY with the requested OUTPUT FORMAT.
 
 OUTPUT FORMAT:
 • [Insight in one sentence] — Source: [URL]
@@ -60,10 +62,10 @@ async def business_model_agent(company: str) -> dict:
         {"output": str, "sources": list[str]}
     """
     queries = [
-        f"{company} business model revenue how they make money",
-        f"{company} pricing enterprise API subscription",
-        f"{company} customers clients enterprise case study",
-        f"{company} ARR revenue growth 2026",
+        f"{company} artificial intelligence AI enterprise revenue business model financials",
+        f"{company} artificial intelligence AI enterprise API pricing subscription",
+        f"{company} artificial intelligence AI B2B enterprise customers case study",
+        f"{company} artificial intelligence AI ARR revenue growth 2026 earnings",
     ]
 
     # Run all searches sequentially
@@ -95,6 +97,14 @@ async def business_model_agent(company: str) -> dict:
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
     unverified_citation_count = citation_check["unverified_count"]
+
+    # Check for hallucinated sources instead of hallucinated proper nouns
+    if unverified_citation_count > 0:
+        warning_msg = f"WARNING: {unverified_citation_count} cited sources were not found in the search results. Claims may be hallucinated."
+        if not metadata.get("internal_conflicts") or metadata["internal_conflicts"].upper() == "NONE":
+            metadata["internal_conflicts"] = warning_msg
+        else:
+            metadata["internal_conflicts"] += f" | {warning_msg}"
 
     return {
         "output": display_output,

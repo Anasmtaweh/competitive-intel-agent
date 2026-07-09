@@ -1,0 +1,15 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+old-frontend/
+frontend/node_modules/
+frontend/.next/
+*.md
+*.txt
+!requirements.txt
+test.py
+fix_prompts.py
+v0-prompt.md

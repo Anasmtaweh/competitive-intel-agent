@@ -33,16 +33,27 @@ async def run_analysis(company: str):
     prompt = f"""Is "{company}" a real technology or AI-related company 
     that could be analyzed for competitive intelligence purposes?
     
-    Reply with VALID if it is a real tech/AI company, startup, or 
-    technology organization.
-    Reply with INVALID if it is: a consumer brand unrelated to tech, 
-    a person's name, fictional, nonsensical, or not a real company.
+    Reply with exactly one word: VALID if it is a real tech/AI company, startup, or technology organization.
+    Reply with exactly one word: INVALID if it is a consumer brand unrelated to tech, a person's name, fictional, nonsensical, or not a real company.
     
-    Reply with VALID or INVALID only. No explanation."""
+    Reply with the single word VALID or the single word INVALID and nothing else."""
     
     try:
-        validation_result = await call_llm(prompt, temperature=0.0, max_tokens=100)
-        if "INVALID" in validation_result.upper():
+        import re
+        # Provide plenty of max_tokens (1000) for reasoning models (like Qwen/DeepSeek) 
+        # to complete their Chain of Thought blocks before outputting the final answer.
+        validation_result = await call_llm(prompt, temperature=0.0, max_tokens=1000)
+        
+        result_clean = validation_result.upper()
+        
+        # Scan the entire output (including any leaked reasoning blocks) for VALID or INVALID
+        matches = re.findall(r"\b(VALID|INVALID)\b", result_clean)
+        
+        # Extract the absolute last mentioned decision
+        final_decision = matches[-1] if matches else "UNKNOWN"
+        
+        # Strict code-level enforcement: fail closed
+        if final_decision != "VALID":
             error_event = {
                 "type": "error",
                 "agent": "validator",
@@ -55,6 +66,8 @@ async def run_analysis(company: str):
 
     queue = asyncio.Queue()
     agent_results = {}
+    
+
 
     async def wrapped(name: str, func, comp: str):
         try:

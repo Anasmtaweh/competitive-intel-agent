@@ -75,6 +75,7 @@ Do not dismiss risks aggressively. Explain how a risk is mitigated or balanced a
 - LIQUIDITY VS. PROFITABILITY: Be explicitly precise with financial concepts. A major funding round reduces near-term liquidity risk, but it does NOT solve fundamental profitability or execution risks. Having capital to continue operating is fundamentally different from proving the business model is economically sustainable.
 
 STEP 5 — VERDICT SELECTION:
+HARD RULE: You CANNOT issue an INVEST verdict if your CONFIDENCE score is below 7. If confidence is low due to poor or missing evidence, you must default to WATCH or AVOID.
 - INVEST: Strong fundamentals outweigh risks, backed by high-evidence-quality sources.
 - PARTNER: Interesting strategically but not investment-grade.
 - AVOID: Red flags dominate, especially if backed by high-evidence-quality sources.
@@ -98,9 +99,7 @@ STABILITY: [HIGH/MEDIUM/LOW]
 STABILITY_REASON: [One sentence: what single piece of new information would most likely change this verdict]
 WHAT_WOULD_FLIP_TO_INVEST: [condition] (CRITICAL: Only reference metrics, companies, or events that appear explicitly in the agent reports above. Do not invent thresholds or figures not grounded in the provided evidence. Write N/A if already INVEST.)
 WHAT_WOULD_FLIP_TO_AVOID: [condition] (Same anti-hallucination rule as above. Write N/A if already AVOID.)
-INTELLIGENCE_GAP_1: [description] | CONFIDENCE_IMPACT: +[X]
-INTELLIGENCE_GAP_2: [description] | CONFIDENCE_IMPACT: +[X]
-INTELLIGENCE_GAP_3: [description] | CONFIDENCE_IMPACT: +[X]
+INTELLIGENCE_GAPS: [List your intelligence gaps here as bullet points, e.g. "- Description | IMPACT: +X". Write NONE if no significant gaps.]
 REASONING: [5 sentences of strict synthesis, using measured language and clear reasoning chains.
 1: The overarching narrative. 
 2: Why the main strength was weighted heavily. 
@@ -125,12 +124,35 @@ def parse_verdict(output: str) -> dict:
     verdict = verdict_match.group(1) if verdict_match else "UNKNOWN"
     confidence = int(confidence_match.group(1)) if confidence_match else 5
 
+    # We capture if an override happened here, but apply the text change to reasoning_clean later
+    override_applied = False
+    # Strict code-level enforcement: Do not trust the LLM to follow the rule.
+    if verdict == "INVEST" and confidence < 7:
+        verdict = "WATCH"
+        override_applied = True
+
     stability_match = re.search(r"STABILITY:\s*(HIGH|MEDIUM|LOW)", output, re.IGNORECASE)
     stability = stability_match.group(1).upper() if stability_match else None
 
-    gap_pattern = r"INTELLIGENCE_GAP_\d+:\s*(.+?)\s*\|\s*CONFIDENCE_IMPACT:\s*\+?(\d+)"
-    gaps_matches = re.findall(gap_pattern, output)
-    intelligence_gaps = [{"description": desc.strip(), "impact": int(imp)} for desc, imp in gaps_matches]
+    gaps_raw = extract("INTELLIGENCE_GAPS", ["REASONING"]) or "NONE"
+    intelligence_gaps = []
+    if gaps_raw.strip().upper() != "NONE":
+        for line in gaps_raw.split('\n'):
+            line = line.strip()
+            if not line or line.upper() == "NONE":
+                continue
+            
+            # Extract impact score
+            impact_match = re.search(r'(?:IMPACT|CONFIDENCE_IMPACT).*?(?:\+?\s*(\d+))', line, re.IGNORECASE)
+            impact = int(impact_match.group(1)) if impact_match else 1
+            
+            # Clean description safely without truncating if the word "impact" or "confidence" appears in the sentence
+            desc = re.sub(r'[\(\[\|-]\s*(?:IMPACT|CONFIDENCE_IMPACT)[^a-zA-Z]*\d+[\]\)]?\s*$', '', line, flags=re.IGNORECASE).strip()
+            desc = re.sub(r'\s+(?:IMPACT|CONFIDENCE_IMPACT)\s*:\s*\+?\s*\d+\s*$', '', desc, flags=re.IGNORECASE).strip()
+            desc = re.sub(r'^[-*•\d\.]+\s*', '', desc).strip()
+            
+            if desc:
+                intelligence_gaps.append({"description": desc, "impact": impact})
 
     reasoning_raw = extract("REASONING", []) or output
 
@@ -139,14 +161,17 @@ def parse_verdict(output: str) -> dict:
         'KEY_DECISION_DRIVERS:', 'STRONGEST_SUPPORTING_EVIDENCE:',
         'STRONGEST_OPPOSING_EVIDENCE:', 'TRADE_OFF:',
         'STABILITY:', 'STABILITY_REASON:', 'WHAT_WOULD_FLIP_TO_INVEST:',
-        'WHAT_WOULD_FLIP_TO_AVOID:', 'INTELLIGENCE_GAP_1:', 
-        'INTELLIGENCE_GAP_2:', 'INTELLIGENCE_GAP_3:', 'REASONING:'
+        'WHAT_WOULD_FLIP_TO_AVOID:', 'INTELLIGENCE_GAPS:', 'REASONING:'
     ]
     clean_lines = [
         line for line in reasoning_raw.split('\n')
         if not any(line.strip().startswith(label) for label in known_labels)
     ]
     reasoning_clean = '\n'.join(clean_lines).strip()
+    
+    if override_applied:
+        override_notice = f"\n\nNote: The initial analysis supported an INVEST rating, but the overall confidence score of {confidence}/10 falls below the minimum threshold of 7 required for an actionable investment recommendation. The verdict has been adjusted to WATCH pending higher-quality evidence."
+        reasoning_clean += override_notice
 
     return {
         "verdict": verdict,
@@ -159,7 +184,7 @@ def parse_verdict(output: str) -> dict:
         "stability": stability,
         "stability_reason": extract("STABILITY_REASON", ["WHAT_WOULD_FLIP_TO_INVEST"]) or "",
         "what_would_flip_to_invest": extract("WHAT_WOULD_FLIP_TO_INVEST", ["WHAT_WOULD_FLIP_TO_AVOID"]) or "",
-        "what_would_flip_to_avoid": extract("WHAT_WOULD_FLIP_TO_AVOID", ["INTELLIGENCE_GAP_1", "REASONING"]) or "",
+        "what_would_flip_to_avoid": extract("WHAT_WOULD_FLIP_TO_AVOID", ["INTELLIGENCE_GAPS", "REASONING"]) or "",
         "intelligence_gaps": intelligence_gaps,
         "reasoning": reasoning_clean,
     }

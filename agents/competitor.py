@@ -20,8 +20,9 @@ INSTRUCTIONS:
 1. Identify exactly the top 3 competitors to {company_name} based on the search results.
 2. For each competitor: ONE sentence on their main strength relative to {company_name}.
 3. ONE sentence on {company_name}'s competitive position overall.
-4. Cite source URLs for all factual claims.
-5. Only include competitors mentioned in the search results.
+4. PROPER NOUNS: Do not hallucinate or guess names. You must spell the names of individuals, products, and companies EXACTLY as they appear in the search results.
+5. Cite source URLs for all factual claims.
+6. Only include competitors mentioned in the search results.
 6. When multiple sources give conflicting figures for the same metric, use the most recently dated source and note the date.
 7. Sources labeled [Tier 1] are most reliable. Prefer them over lower-tier sources when information conflicts.
 8. If a source's Date is more than 6 months before today's date listed above, or describes an event that more recent sources contradict or supersede, do NOT present it as current fact. Either omit it or explicitly mark it as historical (e.g., 'as of a [date] announcement, this may since have changed').
@@ -33,6 +34,7 @@ INSTRUCTIONS:
 14. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 15. TONE: Write like an analyst, not a promoter. Use measured language (e.g., "appears to maintain," "currently holds," "suggests a competitive advantage"). NEVER use absolute or hyperbolic language like "dominates," "crushes," "unbeatable," or "insurmountable." Every claim must be proportional to the evidence and defensible if challenged.
 16. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
+17. NO REASONING: DO NOT output any step-by-step reasoning, scratchpad, or inner monologue. Start your response IMMEDIATELY with the requested OUTPUT FORMAT.
 
 OUTPUT FORMAT:
 • [Insight in one sentence] — Source: [URL]
@@ -93,6 +95,14 @@ async def competitor_agent(company: str) -> dict:
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
     unverified_citation_count = citation_check["unverified_count"]
+
+    # Check for hallucinated sources instead of hallucinated proper nouns
+    if unverified_citation_count > 0:
+        warning_msg = f"WARNING: {unverified_citation_count} cited sources were not found in the search results. Claims may be hallucinated."
+        if not metadata.get("internal_conflicts") or metadata["internal_conflicts"].upper() == "NONE":
+            metadata["internal_conflicts"] = warning_msg
+        else:
+            metadata["internal_conflicts"] += f" | {warning_msg}"
 
     return {
         "output": display_output,

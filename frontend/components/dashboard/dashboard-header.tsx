@@ -3,17 +3,7 @@
 import { useState } from "react"
 import { Search, Radar } from "lucide-react"
 
-export function DashboardHeader({ 
-  onSearch, 
-  isStreaming,
-  apiKey,
-  setApiKey
-}: { 
-  onSearch?: (q: string) => void, 
-  isStreaming?: boolean,
-  apiKey?: string,
-  setApiKey?: (val: string) => void
-}) {
+export function DashboardHeader({ onSearch, isStreaming }: { onSearch?: (q: string) => void, isStreaming?: boolean }) {
   const [query, setQuery] = useState("")
 
   return (
@@ -22,13 +12,13 @@ export function DashboardHeader({
         <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-card backdrop-blur-md">
           <Radar className="size-4 text-primary" aria-hidden="true" />
         </div>
-        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground md:text-2xl text-center">
+        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground md:text-2xl">
           Competitive Intelligence Agent
         </h1>
       </div>
 
       <form
-        className="flex w-full max-w-3xl items-center gap-3"
+        className="flex w-full max-w-xl items-center gap-3"
         onSubmit={(e) => {
           e.preventDefault()
           if (onSearch && !isStreaming) onSearch(query)
@@ -50,15 +40,6 @@ export function DashboardHeader({
             className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground backdrop-blur-md outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
           />
         </div>
-        <input
-          type="text"
-          value={apiKey || ""}
-          onChange={(e) => setApiKey && setApiKey(e.target.value)}
-          disabled={isStreaming}
-          placeholder="Fireworks API Key (Required)"
-          required
-          className="h-12 w-64 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground backdrop-blur-md outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
-        />
         <button
           type="submit"
           disabled={isStreaming}

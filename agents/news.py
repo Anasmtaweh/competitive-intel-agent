@@ -20,7 +20,8 @@ INSTRUCTIONS:
 1. Read every search result carefully.
 2. Extract ONLY events that are business-critical: funding rounds, acquisitions, major partnerships, product launches that change market position, leadership changes, lawsuits, regulatory actions, or significant customer wins/losses.
 3. Ignore: opinion pieces, minor software updates, repetitive coverage of the same event.
-4. For each event, you MUST cite the Source URL from the search results.
+4. PROPER NOUNS: Do not hallucinate or guess names. You must spell the names of individuals, products, and companies EXACTLY as they appear in the search results.
+5. For each event, you MUST cite the Source URL from the search results.
 5. If insufficient data found, say exactly: "Insufficient data found for this category."
 6. If a source's Date is more than 6 months before today's date listed above, or describes an event that more recent sources contradict or supersede, do NOT present it as current fact. Either omit it or explicitly mark it as historical (e.g., 'as of a [date] announcement, this may since have changed').
 7. Only cite a URL that is character-for-character identical to one of the URLs explicitly listed in the search results above. Do not generate, infer, paraphrase, or guess at any URL. If you cannot find a URL that exactly matches, do not make the claim.
@@ -31,6 +32,7 @@ INSTRUCTIONS:
 12. SOURCE QUALITY FOR QUANTITATIVE CLAIMS: Do NOT cite Tier 4 sources (Reddit, Facebook, YouTube, forums) for quantitative business claims such as revenue figures, loss figures, profit margins, valuations, market share percentages, or employee counts. Tier 4 sources may only support qualitative observations (e.g., sentiment, market perception). For any numerical business claim, you must use a Tier 1, Tier 2, or Tier 3 source. If the only source for a number is Tier 4, state the figure but explicitly caveat it as 'unverified (social media source)'.
 13. TONE: Write like a journalist reporting facts, not an advocate. Use measured language. NEVER use absolute or hyperbolic language like "historic," "groundbreaking," "game-changing," or "unprecedented" unless directly quoting a source. Every statement must be proportional to the evidence.
 14. CRITICAL RULE: You must synthesize information from at least two different sources. Do not extract all your claims from a single source.
+15. NO REASONING: DO NOT output any step-by-step reasoning, scratchpad, or inner monologue. Start your response IMMEDIATELY with the requested OUTPUT FORMAT.
 
 OUTPUT FORMAT:
 • [Event in one sentence] — Source: [URL]
@@ -56,11 +58,11 @@ async def news_agent(company: str) -> dict:
         {"output": str, "sources": list[str]}
     """
     queries = [
-        f"{company} news 2026",
-        f"{company} funding investment raise 2026",
-        f"{company} partnership deal announcement 2026",
-        f"{company} CEO leadership change departure 2026",
-        f"{company} lawsuit regulatory compliance 2026",
+        f"{company} artificial intelligence AI news 2026",
+        f"{company} artificial intelligence AI funding investment raise 2026",
+        f"{company} artificial intelligence AI partnership deal announcement 2026",
+        f"{company} artificial intelligence AI CEO leadership change departure 2026",
+        f"{company} artificial intelligence AI lawsuit regulatory compliance 2026",
     ]
 
     # Run all searches sequentially
@@ -92,6 +94,14 @@ async def news_agent(company: str) -> dict:
     citation_check = validate_citations(raw_output, unique_results)
     sources = citation_check["verified_sources"]
     unverified_citation_count = citation_check["unverified_count"]
+
+    # Check for hallucinated sources instead of hallucinated proper nouns
+    if unverified_citation_count > 0:
+        warning_msg = f"WARNING: {unverified_citation_count} cited sources were not found in the search results. Claims may be hallucinated."
+        if not metadata.get("internal_conflicts") or metadata["internal_conflicts"].upper() == "NONE":
+            metadata["internal_conflicts"] = warning_msg
+        else:
+            metadata["internal_conflicts"] += f" | {warning_msg}"
 
     return {
         "output": display_output,
