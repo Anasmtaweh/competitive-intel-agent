@@ -78,7 +78,7 @@ export function useAgentStream() {
     setError(null);
 
     const es = new EventSource(
-      `http://localhost:8000/api/stream?company=${encodeURIComponent(company)}`
+      `/api/stream?company=${encodeURIComponent(company)}`
     );
 
     // The backend sends UNNAMED SSE events (just `data: {...}\n\n`)
