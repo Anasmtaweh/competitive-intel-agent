@@ -30,6 +30,10 @@ async def run_analysis(company: str):
     Finally, yields the verdict.
     """
     from core.llm import call_llm
+    
+    # Send immediate connection ping to flush HTTP headers and prevent browser timeout
+    yield ": connected\n\n"
+    
     prompt = f"""Is "{company}" a real technology or AI-related company 
     that could be analyzed for competitive intelligence purposes?
     
@@ -88,15 +92,22 @@ async def run_analysis(company: str):
     # Fire all 5 research agents simultaneously
     tasks = [asyncio.create_task(wrapped(name, func, company)) for name, func in AGENT_MAP.items()]
 
-    # Collect and yield results as they arrive
-    for _ in range(len(AGENT_MAP)):
-        event = await queue.get()
-        
-        # If successful, store in agent_results so verdict_agent can use it
-        if event.get("type") == "agent_complete":
-            agent_results[event["agent"]] = event
+    # Collect and yield results as they arrive, using a timeout for heartbeats
+    completed = 0
+    while completed < len(AGENT_MAP):
+        try:
+            # Wait up to 15 seconds for an agent to finish
+            event = await asyncio.wait_for(queue.get(), timeout=15.0)
             
-        yield f"data: {json.dumps(event)}\n\n"
+            # If successful, store in agent_results so verdict_agent can use it
+            if event.get("type") == "agent_complete":
+                agent_results[event["agent"]] = event
+                
+            yield f"data: {json.dumps(event)}\n\n"
+            completed += 1
+        except asyncio.TimeoutError:
+            # Send an SSE comment as a heartbeat to prevent reverse-proxy timeouts
+            yield ": ping\n\n"
 
     # Cleanup tasks
     await asyncio.gather(*tasks, return_exceptions=True)
