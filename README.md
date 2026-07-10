@@ -1,10 +1,12 @@
 # 🔍 Competitive Intelligence Agent
 
-> **Institutional-grade competitive analysis in under 60 seconds.**
+An autonomous swarm of 6 specialized AI agents that performs rapid qualitative competitive intelligence. It analyzes breaking news, maps competitive positioning, dissects business models, scores risk vectors, and identifies growth catalysts. It then synthesizes these findings into an evidence-backed executive summary.
 
-An autonomous swarm of 6 specialized AI agents that performs real-time competitive intelligence. It analyzes breaking news, maps competitive positioning, dissects business models, scores risk vectors, and identifies growth catalysts. It then synthesizes these findings into a definitive, evidence-backed executive recommendation.
-
-Built for founders, investors, and analysts who require Bloomberg Terminal-level insights without the massive price tag or the hallucinations of standard LLMs.
+**Real-World Utility:** 
+This system automates the initial screening phase of corporate strategy and investment research. Rather than an analyst spending hours manually Googling news, identifying competitors, and drafting a preliminary SWOT memo, the agent swarm completes this workflow in under 60 seconds. It is designed for:
+- **Venture Capital & Private Equity:** Rapidly screening hundreds of targets before committing to deep-dive due diligence.
+- **Corporate Strategy (M&A):** Scanning potential acquisition targets or tracking rival pivots.
+- **Enterprise Sales:** Giving sales teams immediate, deep context on a prospect's strategic threats before a major pitch.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -87,6 +89,20 @@ Standard AI wrappers hallucinate financial metrics. We built a deterministic Evi
 ## 💬 Context-Aware Memory Chat
 
 The dashboard includes a stateful chat panel. It doesn't just read the final report—it actively remembers the last 6 conversational turns and routes queries. If you ask a question that requires new information not found in the baseline report, the Chat Agent autonomously triggers a live web search before answering.
+
+---
+
+## 🧪 Rigorous Automated QA Testing
+
+Because multi-agent systems can be unpredictable, we built a dedicated, autonomous QA testing pipeline to secure the application before deployment.
+
+We developed a local Python testing script powered by a frontier LLM via the **Fireworks API**. The script aggressively simulated hundreds of edge cases by adopting various user personas (e.g., "The Prompt Injector", "The Context Switcher"). It automatically:
+- Fed the system a matrix of valid tech companies, traditional conglomerates, and off-topic queries.
+- Verified that the `Gatekeeper` successfully blocked non-tech companies using broad business principles rather than hardcoded whitelists.
+- Evaluated the `Verdict Agent` to ensure 100% adherence to strict JSON structural schemas.
+- Tested the `Chat Agent`'s conversational memory to eliminate hallucination and persona drift across multi-turn chats.
+
+By using an LLM to systematically evaluate the system's responses, we successfully hardened our routing logic and guardrails far beyond standard manual testing.
 
 ---
 
