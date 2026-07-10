@@ -39,6 +39,7 @@ async def run_analysis(company: str):
     
     Reply with exactly one word: VALID if it is a real tech/AI company, startup, or technology organization.
     Reply with exactly one word: INVALID if it is a consumer brand unrelated to tech, a person's name, fictional, nonsensical, or not a real company.
+    CRITICAL INSTRUCTION: You MUST reply INVALID for management consulting firms (e.g., McKinsey, Deloitte, PwC) AND industrial conglomerates/holding companies (e.g., General Electric, Berkshire Hathaway, Exxon Mobil) even if they have technology subsidiaries.
     
     Reply with the single word VALID or the single word INVALID and nothing else."""
     

@@ -89,6 +89,7 @@ Write like a senior institutional equity researcher, not promotional marketing c
 
 OUTPUT FORMAT (follow exactly):
 VERDICT: [INVEST/PARTNER/AVOID/WATCH]
+OVERRIDE_NOTICE: [If your reasoning text strongly implies an 'INVEST' stance but your final verdict is 'WATCH' or another lower tier, you MUST write a 1-2 sentence explanation here explaining the downgrade. If they match, write NONE.]
 CONFIDENCE: [1-10] — [1 sentence justifying this score, explicitly referencing evidence quality, source agreement, unresolved uncertainty, and remaining assumptions. CALIBRATION RULE: Your confidence score MUST NOT exceed the average evidence_quality of the 5 agents by more than 2 points. For example, if the average evidence_quality is 5.4, your maximum confidence is 7.]
 CROSS_AGENT_CONFLICTS: [Describe genuine conflicts only. Explicitly state which agent/source you trusted and WHY. Write NONE if none found.]
 KEY_DECISION_DRIVERS: [2-3 findings that most influenced this verdict, citing agent names]
@@ -116,6 +117,7 @@ def parse_verdict(output: str) -> dict:
         return match.group(1).strip() if match else None
 
     verdict_match = re.search(r"VERDICT:\s*(INVEST|PARTNER|AVOID|WATCH)", output)
+    override_notice_raw = extract("OVERRIDE_NOTICE", ["CONFIDENCE"]) or "NONE"
     confidence_match = re.search(r"CONFIDENCE:\s*(\d+)", output)
 
     conflicts_raw = extract("CROSS_AGENT_CONFLICTS", ["KEY_DECISION_DRIVERS"]) or "NONE"
@@ -157,7 +159,7 @@ def parse_verdict(output: str) -> dict:
     reasoning_raw = extract("REASONING", []) or output
 
     known_labels = [
-        'VERDICT:', 'CONFIDENCE:', 'CROSS_AGENT_CONFLICTS:',
+        'VERDICT:', 'OVERRIDE_NOTICE:', 'CONFIDENCE:', 'CROSS_AGENT_CONFLICTS:',
         'KEY_DECISION_DRIVERS:', 'STRONGEST_SUPPORTING_EVIDENCE:',
         'STRONGEST_OPPOSING_EVIDENCE:', 'TRADE_OFF:',
         'STABILITY:', 'STABILITY_REASON:', 'WHAT_WOULD_FLIP_TO_INVEST:',
@@ -172,6 +174,9 @@ def parse_verdict(output: str) -> dict:
     if override_applied:
         override_notice = f"\n\nNote: The initial analysis supported an INVEST rating, but the overall confidence score of {confidence}/10 falls below the minimum threshold of 7 required for an actionable investment recommendation. The verdict has been adjusted to WATCH pending higher-quality evidence."
         reasoning_clean += override_notice
+        
+    if override_notice_raw.strip().upper() != "NONE":
+        reasoning_clean += f"\n\n[OVERRIDE NOTICE]: {override_notice_raw.strip()}"
 
     return {
         "verdict": verdict,
