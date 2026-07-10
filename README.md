@@ -1,12 +1,11 @@
-# 🔍 Competitive Intelligence Agent
+# 🔍 AI Company Evaluator
 
-An autonomous swarm of 6 specialized AI agents that performs rapid qualitative competitive intelligence. It analyzes breaking news, maps competitive positioning, dissects business models, scores risk vectors, and identifies growth catalysts. It then synthesizes these findings into an evidence-backed executive summary.
+A system of 6 specialized parallelized AI agents that performs rapid qualitative competitive intelligence. It analyzes breaking news, maps competitive positioning, dissects business models, scores risk vectors, and identifies growth catalysts. It then synthesizes these findings into an evidence-backed executive summary.
 
 **Real-World Utility:** 
-This system automates the initial screening phase of corporate strategy and investment research. Rather than an analyst spending hours manually Googling news, identifying competitors, and drafting a preliminary SWOT memo, the agent swarm completes this workflow in under 60 seconds. It is designed for:
-- **Venture Capital & Private Equity:** Rapidly screening hundreds of targets before committing to deep-dive due diligence.
-- **Corporate Strategy (M&A):** Scanning potential acquisition targets or tracking rival pivots.
-- **Enterprise Sales:** Giving sales teams immediate, deep context on a prospect's strategic threats before a major pitch.
+The AI and Tech sectors are currently drowning in hype, making it difficult to separate genuine technical innovation from thin AI wrappers. This system is designed specifically for **Tech-focused VCs, AI Industry Analysts, and Tech Corporate Strategists**. 
+
+It automates the deep-dive qualitative screening of AI startups and Tech companies. Protected by a Gatekeeper that exclusively permits tech/AI queries, the parallelized agents cut through the market noise to evaluate actual technical moats, compute/dependency risks, and real-world business models in under 60 seconds.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -96,7 +95,7 @@ The dashboard includes a stateful chat panel. It doesn't just read the final rep
 
 Because multi-agent systems can be unpredictable, we built a dedicated, autonomous QA testing pipeline to secure the application before deployment.
 
-We developed a local Python testing script powered by a frontier LLM via the **Fireworks API**. The script aggressively simulated hundreds of edge cases by adopting various user personas (e.g., "The Prompt Injector", "The Context Switcher"). It automatically:
+We developed a local Python testing script powered by **Kimi 2.6**. The script aggressively simulated hundreds of edge cases by adopting various user personas (e.g., "The Prompt Injector", "The Context Switcher"). It automatically:
 - Fed the system a matrix of valid tech companies, traditional conglomerates, and off-topic queries.
 - Verified that the `Gatekeeper` successfully blocked non-tech companies using broad business principles rather than hardcoded whitelists.
 - Evaluated the `Verdict Agent` to ensure 100% adherence to strict JSON structural schemas.
@@ -119,12 +118,12 @@ A dark-mode, glassmorphism-styled dashboard built with **Next.js 16**, **React 1
 
 ## ⚡ AMD Platform Usage
 
-This project runs inference through **Fireworks AI**, which hosts models on **AMD Instinct GPUs**. 
+This project runs inference through **Fireworks AI**, leveraging their ultra-fast infrastructure powered by **AMD Instinct™ MI300X accelerators**. 
 
-- **LLM Provider:** Fireworks AI (AMD hardware)
-- **Active Model:** `qwen3p7-plus` 
-- **Performance:** All 6 agents route through the AMD-accelerated endpoint concurrently, cutting wall-clock time from 3 minutes to ~40 seconds.
-- **Provider-Agnostic:** Want to swap to another OpenAI-compatible endpoint? Change 3 environment variables in `.env`. Zero code changes required.
+- **Hardware Layer:** AMD Instinct™ MI300X Accelerators
+- **LLM Provider:** Fireworks AI API
+- **Active Model:** `Qwen 3.7+` (or equivalent open-weight frontier model)
+- **Performance Impact:** Running 6 specialized agents concurrently requires massive throughput. By deploying our parallel routing logic on AMD-accelerated infrastructure, we successfully cut the wall-clock execution time down to roughly 45 seconds. This high-throughput processing is what makes the multi-agent architecture viable for real-time user requests.
 
 ---
 
