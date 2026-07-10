@@ -34,14 +34,15 @@ async def run_analysis(company: str):
     # Send immediate connection ping to flush HTTP headers and prevent browser timeout
     yield ": connected\n\n"
     
-    prompt = f"""Is "{company}" a real technology or AI-related company 
-    that could be analyzed for competitive intelligence purposes?
+    prompt = f"""Is "{company}" a pure-play technology or AI-focused company?
     
-    Reply with exactly one word: VALID if it is a real tech/AI company, startup, or technology organization.
-    Reply with exactly one word: INVALID if it is a consumer brand unrelated to tech, a person's name, fictional, nonsensical, or not a real company.
-    CRITICAL INSTRUCTION: You MUST reply INVALID for management consulting firms (e.g., McKinsey, Deloitte, PwC) AND industrial conglomerates/holding companies (e.g., General Electric, Berkshire Hathaway, Exxon Mobil) even if they have technology subsidiaries.
+    This system is STRICTLY for competitive intelligence on core technology and AI companies (e.g., software, hardware, AI models, cloud, robotics). 
     
-    Reply with the single word VALID or the single word INVALID and nothing else."""
+    You MUST reply exactly one word: INVALID for ANY company where technology is just a supporting function rather than its core product. This includes legacy telecom, real estate, professional services, banking, retail, food, and industrial conglomerates, even if they have tech divisions.
+    
+    Reply with exactly one word: VALID if it is a core technology/AI company.
+    Reply with exactly one word: INVALID if it falls into any other sector.
+    """
     
     try:
         import re

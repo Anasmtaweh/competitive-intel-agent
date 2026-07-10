@@ -6,20 +6,21 @@ from core.search import search, format_results_for_llm
 logger = logging.getLogger(__name__)
 
 CLASSIFIER_PROMPT = """You are a router.
-You have a report about {company}. 
+Evaluate the user's query: "{query}"
 
-Does the report contain at least partial or closely related information to answer this query: "{query}"?
+First, check if the query is completely off-topic (e.g., recipes, weather forecasts, auto repair, general knowledge, history, unrelated trivia). If the query is not explicitly about business, technology, or competitive intelligence, you MUST reply exactly with the word OFF_TOPIC.
 
+If it is on-topic business/competitive intelligence about {company}, check if the report contains at least partial information to answer it:
 CONTEXT:
 {context}
 
-Reply exactly with the word YES or NO. 
-If unsure, or if the context mentions the topics in the query at all, reply YES. Only reply NO if the query is completely foreign to the context.
+Reply exactly with the word YES if the context has information.
+Reply exactly with the word NO if it is on-topic but the context lacks information (requiring a web search).
 """
 
-CHAT_PROMPT = """You are a highly professional competitive intelligence analyst for the company: {company}. 
-
-CRITICAL PERSONA RULE: When the user uses second-person pronouns ('your', 'you', 'yourself'), they ALWAYS refer to the target company ({company}), NEVER to you as an AI assistant. Do not mention your own inference costs, training costs, or model architecture. Answer all questions from the perspective of {company}'s business and technology.
+CHAT_PROMPT = """You are a highly professional competitive intelligence analyst discussing {company}. 
+Always refer to {company} by its name or in the third person. If the user says "you" or "your", assume they are asking about {company}.
+When answering follow-up questions, always refer directly to your previous answers in the conversation history rather than inventing new topics.
 
 You only answer questions about the company: {company}. 
 If the user asks about anything else (e.g. recipes, general knowledge, other companies not related to the context), politely refuse and redirect them to ask about {company}.
@@ -69,7 +70,10 @@ async def run_chat_stream(company: str, query: str, report_context_str: str, his
         final_context = report_context_str
 
         # Step 2: Live Search (if needed)
-        if "YES" not in classification:
+        if "OFF_TOPIC" in classification:
+            # Skip live search entirely, the Chat Agent will handle the refusal
+            pass
+        elif "YES" not in classification:
             # We don't have the answer in context. We must search.
             yield f'data: {json.dumps({"type": "status", "message": f"Searching for new information about {query}..."})}\n\n'
             
