@@ -177,6 +177,11 @@ def parse_verdict(output: str) -> dict:
         
     if override_notice_raw.strip().upper() != "NONE":
         reasoning_clean += f"\n\n[OVERRIDE NOTICE]: {override_notice_raw.strip()}"
+        
+    # Programmatic structural enforcement
+    if verdict != "INVEST" and re.search(r"\bINVEST\b", reasoning_clean, re.IGNORECASE):
+        if override_notice_raw.strip().upper() == "NONE" and not override_applied:
+            reasoning_clean += "\n\n[OVERRIDE NOTICE]: The reasoning discusses 'INVEST' as a potential or conditional stance, but the final verdict has been structurally downgraded or confirmed as non-investable at this time pending higher-quality evidence."
 
     return {
         "verdict": verdict,
