@@ -8,14 +8,16 @@ logger = logging.getLogger(__name__)
 CLASSIFIER_PROMPT = """You are a router.
 Evaluate the user's query: "{query}"
 
-First, check if the query is completely off-topic (e.g., recipes, weather forecasts, auto repair, general knowledge, history, unrelated trivia). If the query is not explicitly about business, technology, or competitive intelligence, you MUST reply exactly with the word OFF_TOPIC.
+Step 1: Is this query explicitly related to business strategy, competitive intelligence, or the technology of {company}? 
+If the answer is NO (e.g., it's about weather, sports, general knowledge, recipes), you MUST output exactly: OFF_TOPIC.
 
-If it is on-topic business/competitive intelligence about {company}, check if the report contains at least partial information to answer it:
+Step 2: If the answer is YES, check if the report contains at least partial information to answer it:
 CONTEXT:
 {context}
+If the context has the information, output exactly: YES.
+If the context lacks the information (requiring a web search), output exactly: NO.
 
-Reply exactly with the word YES if the context has information.
-Reply exactly with the word NO if it is on-topic but the context lacks information (requiring a web search).
+Only output one of the three exact words (OFF_TOPIC, YES, or NO) on the final line of your response.
 """
 
 CHAT_PROMPT = """You are a highly professional competitive intelligence analyst discussing {company}. 
@@ -47,33 +49,26 @@ async def run_chat_stream(company: str, query: str, report_context_str: str, his
     Step 3: Stream the response.
     """
     try:
-        # Step 1: Classification
-        # Fast-path Zero-Token Heuristic: Check for keyword overlap to save tokens
-        query_words = set(w.strip('?,.!') for w in query.lower().split() if len(w.strip('?,.!')) > 4)
-        context_lower = report_context_str.lower()
-        overlap = [w for w in query_words if w in context_lower]
-        
-        # If at least one significant keyword is in the context, skip the LLM and don't search
-        if overlap:
-            classification = "YES"
-        else:
-            classifier_sys_prompt = CLASSIFIER_PROMPT.format(
-                company=company,
-                context=report_context_str,
-                query=query
-            )
-            classification = await call_llm(classifier_sys_prompt, temperature=0.0, max_tokens=10)
+        # Step 1: Classification (Always use LLM for reliable routing)
+        classifier_sys_prompt = CLASSIFIER_PROMPT.format(
+            company=company,
+            context=report_context_str,
+            query=query
+        )
+        classification = await call_llm(classifier_sys_prompt, temperature=0.0, max_tokens=100)
             
         classification = classification.strip().upper()
+        # Ensure we only check the final decision from the chain of thought
+        final_decision = classification.split('\n')[-1].strip()
         
         # Prepare the final context
         final_context = report_context_str
 
         # Step 2: Live Search (if needed)
-        if "OFF_TOPIC" in classification:
+        if "OFF_TOPIC" in final_decision:
             # Skip live search entirely, the Chat Agent will handle the refusal
             pass
-        elif "YES" not in classification:
+        elif "YES" not in final_decision:
             # We don't have the answer in context. We must search.
             yield f'data: {json.dumps({"type": "status", "message": f"Searching for new information about {query}..."})}\n\n'
             
