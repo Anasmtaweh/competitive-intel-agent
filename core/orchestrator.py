@@ -36,9 +36,9 @@ async def run_analysis(company: str):
     
     prompt = f"""Is "{company}" a valid target for competitive technology and AI intelligence?
     
-    You MUST reply exactly one word: INVALID if technology is merely a supporting IT function used to run a traditional business (e.g., standard consumer goods, professional services, banking, or traditional infrastructure).
+    You MUST reply exactly one word: INVALID if technology is merely a supporting IT function used to run a traditional business, or if the company is primarily a consumer software/app company (e.g., streaming, ride-sharing, food delivery, traditional retail).
     
-    You MUST reply exactly one word: VALID if the company is universally recognized for pioneering advanced technologies (e.g., massive cloud infrastructure, autonomous systems, frontier AI, software, or robotics) that disrupt global markets. A company is VALID if advanced technology is central to its competitive moat, regardless of its original founding industry.
+    You MUST reply exactly one word: VALID if the company is universally recognized for pioneering advanced technologies (e.g., foundation AI models, AI hardware/semiconductors, enterprise AI platforms, autonomous systems, or cloud compute infrastructure) that disrupt global markets. A company is VALID if advanced technology is central to its competitive moat.
     
     Reply with exactly one word: VALID or INVALID.
     """
